@@ -112,6 +112,7 @@ public class ShiftController {
         response.put("salary", saved.getSalary());
         response.put("overtimeHours", saved.getOvertimeHours());
         response.put("overtimeSalary", saved.getOvertimeSalary());
+        response.put("tipAmount", saved.getTipAmount());
         return response;
     }
 
@@ -124,6 +125,32 @@ public class ShiftController {
         m.put("defaultHours", type.getDefaultHours());
         m.put("baseHourlyRate", type.getBaseHourlyRate());
         return m;
+    }
+
+    @PostMapping("/shifts/{shiftId}/tip")
+    public Map<String, Object> addTipToShift(
+        @AuthenticationPrincipal OAuth2User principal,
+        @PathVariable Long shiftId,
+        @RequestBody Map<String, Object> body
+    ) {
+        if (principal == null) {
+            throw new IllegalStateException("User must be authenticated to add a tip");
+        }
+        String userId = principal.getName();
+        Shift shift = shiftRepository.findById(shiftId)
+            .orElseThrow(() -> new IllegalArgumentException("Shift not found"));
+        Object tipValueObj = body.get("tipAmount");
+        if (!(tipValueObj instanceof Number)) {
+            throw new IllegalArgumentException("tipAmount must be a numeric value");
+        }
+        double tipAmount = ((Number) tipValueObj).doubleValue();
+        shift.setTipAmount(tipAmount);
+        shiftRepository.save(shift);
+
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("id", shift.getId());
+        resp.put("tipAmount", shift.getTipAmount());
+        return resp;
     }
 }
 

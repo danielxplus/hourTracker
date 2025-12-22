@@ -11,3 +11,4 @@ public interface ShiftTypeRepository extends JpaRepository<ShiftType, Long> {
 }
 
 
+

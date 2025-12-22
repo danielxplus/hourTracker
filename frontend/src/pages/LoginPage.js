@@ -10,7 +10,7 @@ export default function LoginPage() {
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-slate-900">שעות נוכחות</h1>
           <p className="text-slate-500 text-sm">
-            עקוב אחרי המשמרות והשכר שלך במקום אחד מודרני ונוח.
+            דרך נוחה ופשוטה למעקב אחר משמרות ושכר, במיוחד לעובדי מחלקת ביטחון. 😉
           </p>
         </div>
 
@@ -21,13 +21,6 @@ export default function LoginPage() {
           >
             <span>התחברות עם Google</span>
           </a>
-
-          <button
-            type="button"
-            className="w-full rounded-2xl border border-slate-200 bg-white py-3 text-sm font-medium text-slate-700"
-          >
-            הרשמה עם אימייל (בקרוב)
-          </button>
         </div>
       </div>
     </Layout>

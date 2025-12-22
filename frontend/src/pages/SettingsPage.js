@@ -77,9 +77,6 @@ export default function SettingsPage() {
               <span className="text-sm font-medium text-slate-800">
                 שם תצוגה
               </span>
-              <span className="text-[10px] text-slate-400">
-                השם שיוצג בעמוד הבית
-              </span>
             </div>
             <div className="flex items-center gap-2">
               <input
@@ -107,9 +104,6 @@ export default function SettingsPage() {
               <span className="text-sm font-medium text-slate-800">
                 שכר שעתי
               </span>
-              <span className="text-[10px] text-slate-400">
-                הזן את השכר לשעה
-              </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-500">₪</span>
@@ -125,10 +119,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between gap-4 pt-2 border-t border-slate-100">
             <div className="flex flex-col items-end gap-1">
               <span className="text-sm font-medium text-slate-800">
-                שעות נוספות שכר
-              </span>
-              <span className="text-[10px] text-slate-400">
-                שכר לשעה עבור שעות נוספות
+                שכר שעות נוספות
               </span>
             </div>
             <div className="flex items-center gap-2">

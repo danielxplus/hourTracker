@@ -53,4 +53,9 @@ public class Shift {
      * Calculated salary component that comes from overtime work.
      */
     private Double overtimeSalary;
+
+    /**
+     * Optional tip amount.
+     */
+    private Double tipAmount;
 }

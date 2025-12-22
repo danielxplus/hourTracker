@@ -19,16 +19,18 @@ export default function StatCard({
       className={`rounded-3xl bg-gradient-to-br ${toneClasses} text-white shadow-soft p-4`}
     >
       <div className={`flex flex-col gap-1 ${textAlign}`}>
-        {subtitle && (
-          <span className="text-xs text-white/80 leading-none">{subtitle}</span>
-        )}
+
         <span className="text-sm font-medium leading-none">{title}</span>
         <span className="mt-2 text-3xl font-semibold leading-tight">
           {value}
         </span>
+        {subtitle && (
+            <span className="text-xs text-white/80 leading-none">{subtitle}</span>
+        )}
       </div>
     </div>
   );
 }
+
 
 

@@ -72,74 +72,86 @@ public class UserApiController {
 
     @GetMapping("/summary")
     public Map<String, Object> summary(@AuthenticationPrincipal OAuth2User principal) {
-        Map<String, Object> response = new HashMap<>();
-        if (principal == null) {
-            response.put("monthHours", 0);
-            response.put("weekHours", 0);
-            response.put("hourlyRate", 0);
-            response.put("expectedMonthSalary", 0);
-            response.put("recentShifts", List.of());
+        try{
+            Map<String, Object> response = new HashMap<>();
+            if (principal == null) {
+                response.put("monthHours", 0);
+                response.put("weekHours", 0);
+                response.put("hourlyRate", 0);
+                response.put("expectedMonthSalary", 0);
+                response.put("recentShifts", List.of());
+                response.put("tipAmount", 0);
+                return response;
+            }
+
+            String userId = principal.getName();
+
+            UserSettings settings = userSettingsRepository
+                    .findByUserId(userId)
+                    .orElseGet(() -> {
+                        UserSettings s = new UserSettings();
+                        s.setUserId(userId);
+                        s.setHourlyRate(0.0);
+                        return userSettingsRepository.save(s);
+                    });
+
+            YearMonth thisMonth = YearMonth.now();
+            LocalDate startOfMonth = thisMonth.atDay(1);
+            LocalDate endOfMonth = thisMonth.atEndOfMonth();
+
+            List<Shift> monthShifts = shiftRepository.findByUserIdAndDateBetweenOrderByDateDesc(
+                    userId, startOfMonth, endOfMonth);
+
+            double monthHours = monthShifts.stream()
+                    .mapToDouble(s -> (s.getHours() != null ? s.getHours() : 0.0))
+                    .sum();
+
+            LocalDate weekAgo = LocalDate.now().minusDays(7);
+            List<Shift> weekShifts = shiftRepository.findByUserIdAndDateBetweenOrderByDateDesc(
+                    userId, weekAgo, LocalDate.now());
+
+            double weekHours = weekShifts.stream()
+                    .mapToDouble(s -> (s.getHours() != null ? s.getHours() : 0.0))
+                    .sum();
+
+            double hourlyRate = settings.getHourlyRate() != null ? settings.getHourlyRate() : 0.0;
+            double expectedSalary = monthShifts.stream()
+                    .mapToDouble(s -> (s.getSalary() != null ? s.getSalary() : 0.0))
+                    .sum();
+
+            double totalTips = monthShifts.stream()
+                    .mapToDouble(s -> s.getTipAmount() != null ? s.getTipAmount() : 0.0)
+                    .sum();
+
+
+            List<Map<String, Object>> recent = shiftRepository
+                    .findTop5ByUserIdOrderByDateDesc(userId)
+                    .stream()
+                    .map(s -> {
+                        Map<String, Object> m = new HashMap<>();
+                        m.put("id", s.getId());
+                        m.put("date", s.getDate());
+                        m.put("startTime", s.getStartTime());
+                        m.put("endTime", s.getEndTime());
+                        m.put("shiftType", s.getShiftType());
+                        m.put("hours", s.getHours());
+                        m.put("overtimeHours", s.getOvertimeHours());
+                        m.put("overtimeSalary", s.getOvertimeSalary());
+                        return m;
+                    })
+                    .toList();
+
+            response.put("monthHours", monthHours);
+            response.put("weekHours", weekHours);
+            response.put("hourlyRate", hourlyRate);
+            response.put("expectedMonthSalary", expectedSalary);
+            response.put("recentShifts", recent);
+            response.put("totalTips", totalTips);
             return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
         }
-
-        String userId = principal.getName();
-
-        UserSettings settings = userSettingsRepository
-                .findByUserId(userId)
-                .orElseGet(() -> {
-                    UserSettings s = new UserSettings();
-                    s.setUserId(userId);
-                    s.setHourlyRate(0.0);
-                    return userSettingsRepository.save(s);
-                });
-
-        YearMonth thisMonth = YearMonth.now();
-        LocalDate startOfMonth = thisMonth.atDay(1);
-        LocalDate endOfMonth = thisMonth.atEndOfMonth();
-
-        List<Shift> monthShifts = shiftRepository.findByUserIdAndDateBetweenOrderByDateDesc(
-                userId, startOfMonth, endOfMonth);
-
-        double monthHours = monthShifts.stream()
-                .mapToDouble(s -> (s.getHours() != null ? s.getHours() : 0.0))
-                .sum();
-
-        LocalDate weekAgo = LocalDate.now().minusDays(7);
-        List<Shift> weekShifts = shiftRepository.findByUserIdAndDateBetweenOrderByDateDesc(
-                userId, weekAgo, LocalDate.now());
-
-        double weekHours = weekShifts.stream()
-                .mapToDouble(s -> (s.getHours() != null ? s.getHours() : 0.0))
-                .sum();
-
-        double hourlyRate = settings.getHourlyRate() != null ? settings.getHourlyRate() : 0.0;
-        double expectedSalary = monthShifts.stream()
-                .mapToDouble(s -> (s.getSalary() != null ? s.getSalary() : 0.0))
-                .sum();
-
-        List<Map<String, Object>> recent = shiftRepository
-                .findTop5ByUserIdOrderByDateDesc(userId)
-                .stream()
-                .map(s -> {
-                    Map<String, Object> m = new HashMap<>();
-                    m.put("id", s.getId());
-                    m.put("date", s.getDate());
-                    m.put("startTime", s.getStartTime());
-                    m.put("endTime", s.getEndTime());
-                    m.put("shiftType", s.getShiftType());
-                    m.put("hours", s.getHours());
-                    m.put("overtimeHours", s.getOvertimeHours());
-                    m.put("overtimeSalary", s.getOvertimeSalary());
-                    return m;
-                })
-                .toList();
-
-        response.put("monthHours", monthHours);
-        response.put("weekHours", weekHours);
-        response.put("hourlyRate", hourlyRate);
-        response.put("expectedMonthSalary", expectedSalary);
-        response.put("recentShifts", recent);
-        return response;
     }
 
     @GetMapping("/settings")
@@ -269,6 +281,7 @@ public class UserApiController {
                     m.put("salary", s.getSalary());
                     m.put("overtimeHours", s.getOvertimeHours());
                     m.put("overtimeSalary", s.getOvertimeSalary());
+                    m.put("tipAmount", s.getTipAmount());
                     return m;
                 })
                 .toList();
