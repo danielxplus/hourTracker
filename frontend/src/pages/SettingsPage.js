@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { User, DollarSign, LogOut, Save, UserCircle } from "lucide-react";
+import { User, Banknote, LogOut, Check, X } from "lucide-react";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/client";
@@ -11,18 +11,16 @@ export default function SettingsPage() {
   const [overtimeHourlyRate, setOvertimeHourlyRate] = useState(63.75);
   const [displayName, setDisplayName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [isSavingName, setIsSavingName] = useState(false);
+  const [savedSection, setSavedSection] = useState("");
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     async function load() {
       try {
         const res = await api.get("/settings");
-        // Backend now defaults to 51/63.75 for new users, but we also handled 0.0 case in backend.
-        // We use 'hourlyRate' as per backend API, NOT 'baseHourlyRate'.
         const fetchedRate = res.data.hourlyRate || 51;
         setHourlyRate(fetchedRate);
 
-        // If overtime is missing or 0, auto-calc, otherwise use fetched
         const fetchedOvertime = res.data.overtimeHourlyRate;
         if (!fetchedOvertime) {
           setOvertimeHourlyRate(fetchedRate * 1.25);
@@ -43,9 +41,8 @@ export default function SettingsPage() {
   function handleRateChange(e) {
     const val = e.target.value;
     setHourlyRate(val);
-    // Auto-calculate overtime when base rate changes (optional UX choice, highly requested)
     if (val) {
-      setOvertimeHourlyRate((parseInt(val) * 1.25).toFixed(2));
+      setOvertimeHourlyRate((parseFloat(val) * 1.25).toFixed(2));
     }
   }
 
@@ -56,6 +53,8 @@ export default function SettingsPage() {
         hourlyRate: Number(hourlyRate),
         overtimeHourlyRate: Number(overtimeHourlyRate),
       });
+      setSavedSection("salary");
+      setTimeout(() => setSavedSection(""), 2000);
     } catch (e) {
       console.error(e);
     } finally {
@@ -65,140 +64,146 @@ export default function SettingsPage() {
 
   async function handleSaveName() {
     if (!displayName.trim()) return;
-    setIsSavingName(true);
+    setIsSaving(true);
     try {
       await api.post("/me/display-name", { displayName: displayName.trim() });
       await refreshUser();
+      setSavedSection("name");
+      setTimeout(() => setSavedSection(""), 2000);
     } catch {
       // ignore
     } finally {
-      setIsSavingName(false);
+      setIsSaving(false);
     }
   }
 
+  async function handleLogout() {
+    setShowLogoutModal(false);
+    await logout();
+  }
+
   return (
-    <Layout>
-      <header className="mb-8 text-right">
-        <h1 className="text-2xl font-bold text-slate-900">
-          הגדרות
-        </h1>
-        <p className="text-sm text-slate-500 mt-1">
-          ניהול פרופיל והגדרות שכר
-        </p>
-      </header>
+      <Layout>
+        <header className="mb-6 pt-2" dir="rtl">
+          <h1 className="text-xl font-medium text-zinc-900">הגדרות</h1>
+        </header>
 
-      <div className="space-y-6 text-right" dir="rtl">
-        {/* Profile Card */}
-        <section className="bg-white rounded-3xl shadow-[0_2px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 overflow-hidden">
-          <div className="px-6 pt-6 pb-3 border-b border-slate-50">
-            <div className="flex items-center gap-3 mb-1">
-              <div className="p-2 bg-violet-50 rounded-xl">
-                <UserCircle className="w-5 h-5 text-violet-600" />
+        <div className="space-y-3" dir="rtl">
+          {/* Display Name */}
+          <div className="bg-white rounded-2xl border border-zinc-200/60 p-4 hover:border-emerald-200 transition-colors">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                  <User className="w-4 h-4 text-emerald-600" />
+                </div>
+                <input
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    className="flex-1 bg-transparent text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none"
+                    placeholder="שם תצוגה"
+                />
               </div>
-              <h2 className="text-lg font-bold text-slate-800">שם תצוגה</h2>
-            </div>
-          </div>
-
-          <div className="px-6 pb-6 pt-3">
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                className="flex-1 bg-slate-50 border border-slate-200 text-slate-900 text-right text-sm rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 block w-full p-3 outline-none transition-all"
-                placeholder="הכנס שם מלא"
-              />
               <button
-                onClick={handleSaveName}
-                disabled={isSavingName || !displayName.trim()}
-                className="px-6 py-3 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 disabled:opacity-90 transition-all shadow-md shadow-violet-200 whitespace-nowrap min-w-[6rem]"
+                  type="button"
+                  onClick={handleSaveName}
+                  disabled={isSaving || !displayName.trim()}
+                  className="px-3.5 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium disabled:opacity-50 hover:bg-emerald-700 transition-colors flex-shrink-0 shadow-sm"
               >
-                שמור
+                {savedSection === "name" ? <Check className="w-3.5 h-3.5" /> : "שמור"}
               </button>
             </div>
           </div>
-        </section>
 
-        {/* Salary Settings Card */}
-        <section className="bg-white rounded-3xl shadow-[0_2px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 overflow-hidden">
-          <div className="p-6 border-b border-slate-50">
-            <div className="flex items-center gap-3 mb-1">
-              <div className="p-2 bg-emerald-50 rounded-xl">
-                <DollarSign className="w-5 h-5 text-emerald-600" />
+          {/* Rates Section */}
+          <div className="bg-white rounded-2xl border border-zinc-200/60 divide-y divide-zinc-100">
+            <div className="p-4 hover:bg-emerald-50/30 transition-colors">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 text-sm text-zinc-700">
+                  <Banknote className="w-4 h-4 text-emerald-600" />
+                  <span>שכר שעתי</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                      type="number"
+                      value={hourlyRate}
+                      onChange={handleRateChange}
+                      className="w-24 text-sm text-left bg-zinc-50 rounded-lg px-3 py-2 border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all"
+                  />
+                  <span className="text-xs text-zinc-400 font-medium">₪</span>
+                </div>
               </div>
-              <h2 className="text-lg font-bold text-slate-800">הגדרות שכר</h2>
+            </div>
+
+            <div className="p-4 hover:bg-emerald-50/30 transition-colors">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 text-sm text-zinc-700">
+                  <Banknote className="w-4 h-4 text-emerald-600" />
+                  <span>שעות נוספות</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                      type="number"
+                      step="0.1"
+                      value={overtimeHourlyRate}
+                      onChange={(e) => setOvertimeHourlyRate(e.target.value)}
+                      className="w-24 text-sm text-left bg-zinc-50 rounded-lg px-3 py-2 border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all"
+                  />
+                  <span className="text-xs text-zinc-400 font-medium">₪</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="px-6 pb-6 pt-3 space-y-6">
-            {/* Hourly Rate */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2 text-right">
-                שכר שעתי (בסיס)
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="1"
-                  value={hourlyRate}
-                  onChange={handleRateChange}
-                  className="bg-slate-50 border border-slate-200 text-slate-900 text-right text-lg font-medium rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 block w-full p-4 pr-12 outline-none transition-all"
-                  placeholder="51"
-                  dir="ltr"
-                />
-                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                  <span className="text-slate-400 font-medium">₪</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Overtime Rate */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2 text-right">
-                שכר שעות נוספות
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="0.1"
-                  value={overtimeHourlyRate}
-                  onChange={(e) => setOvertimeHourlyRate(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 text-slate-900 text-right text-lg font-medium rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 block w-full p-4 pr-12 outline-none transition-all"
-                  placeholder="63.75"
-                  dir="ltr"
-                />
-                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                  <span className="text-slate-400 font-medium">₪</span>
-                </div>
-              </div>
-            </div>
-
-            <button
+          <button
+              type="button"
               onClick={handleSaveSalary}
               disabled={isSaving}
-              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-base font-semibold py-4 rounded-xl shadow-md shadow-emerald-200 transition-all disabled:opacity-90"
+              className="w-full rounded-xl bg-zinc-900 text-white py-3 text-sm font-medium shadow-sm disabled:opacity-50 hover:bg-emerald-700 transition-all active:scale-95"
+          >
+            {savedSection === "salary" ? "נשמר ✓" : "שמור שינויים"}
+          </button>
+
+          <div className="pt-2">
+            <button
+                type="button"
+                onClick={() => setShowLogoutModal(true)}
+                className="w-full rounded-xl border border-zinc-200 bg-white text-zinc-600 py-3 text-sm font-medium hover:bg-zinc-50 hover:border-zinc-300 transition-colors flex items-center justify-center gap-2"
             >
-              <Save className="w-5 h-5" />
-              שמור הגדרות שכר
+              <LogOut className="w-4 h-4" />
+              התנתק
             </button>
           </div>
-        </section>
+        </div>
 
-        {/* Logout Button */}
-        <button
-          onClick={logout}
-          className="w-full bg-white border border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 font-medium rounded-2xl py-4 flex items-center justify-center gap-2 transition-all"
-        >
-          <LogOut className="w-5 h-5" />
-          התנתק מהמערכת
-        </button>
-
-        <p className="text-center text-xs text-slate-300 mt-8">
-          HourTracker v1.0.0 © by dxp
-        </p>
-      </div>
-    </Layout>
+        {/* Logout Confirmation Modal */}
+        {showLogoutModal && (
+            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowLogoutModal(false)}>
+              <div className="bg-white rounded-2xl w-full max-w-xs p-5" dir="rtl" onClick={(e) => e.stopPropagation()}>
+                <div className="text-center mb-5">
+                  <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-3">
+                    <LogOut className="w-6 h-6 text-red-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-zinc-900 mb-1">התנתקות מהמערכת</h3>
+                  <p className="text-sm text-zinc-500">האם אתה בטוח שברצונך להתנתק?</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                      onClick={() => setShowLogoutModal(false)}
+                      className="flex-1 py-3 rounded-xl font-medium text-zinc-600 hover:bg-zinc-50 transition-colors"
+                  >
+                    ביטול
+                  </button>
+                  <button
+                      onClick={handleLogout}
+                      className="flex-1 bg-red-600 text-white py-3 rounded-xl font-medium hover:bg-red-700 active:scale-95 transition-all"
+                  >
+                    התנתק
+                  </button>
+                </div>
+              </div>
+            </div>
+        )}
+      </Layout>
   );
 }
-
-
