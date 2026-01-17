@@ -1,7 +1,7 @@
 import Layout from "../components/Layout";
 
 // Point directly to the Spring Boot backend (port 8080)
-const GOOGLE_AUTH_URL = "http://localhost:8080/oauth2/authorization/google";
+const GOOGLE_AUTH_URL = "/oauth2/authorization/google";
 
 export default function LoginPage() {
   return (
