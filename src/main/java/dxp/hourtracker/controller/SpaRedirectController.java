@@ -1,4 +1,4 @@
-package dxp.hourtracker.config;
+package dxp.hourtracker.controller;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;

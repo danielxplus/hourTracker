@@ -35,6 +35,7 @@ export default function HomePage() {
     const [endedLocalIds, setEndedLocalIds] = useState([]);
     const [activeMenuId, setActiveMenuId] = useState(null);
     const [deleteShiftId, setDeleteShiftId] = useState(null);
+    const [endShiftId, setEndShiftId] = useState(null);
 
     useEffect(() => {
         const handleClickOutside = () => setActiveMenuId(null);
@@ -187,15 +188,61 @@ export default function HomePage() {
     }
 
     async function handleCreateShift() {
-        if (!selectedShiftCode || !selectedDate) return;
+        // --- 1. Basic Validation ---
+        if (!selectedShiftCode) {
+            alert("אנא בחר סוג משמרת");
+            return;
+        }
+        if (!selectedDate) {
+            alert("אנא בחר תאריך");
+            return;
+        }
+        // Check that start/end times are not empty
+        if (!startTime || !endTime) {
+            alert("אנא הזן שעות התחלה וסיום");
+            return;
+        }
+
+        // --- 2. Overtime Validation (The new part) ---
+        let finalOvertimeHours = 0;
+        let finalOvertimeRate = null;
+
+        if (isOvertimeOpen) {
+            // Parse the input (it comes as a string)
+            const parsedHours = parseFloat(overtimeHours);
+
+            // Check if it's empty, Not-a-Number, or Negative/Zero
+            if (!overtimeHours || isNaN(parsedHours) || parsedHours <= 0) {
+                alert("שגיאה: יש להזין כמות שעות נוספות חיובית (לדוגמה: 1.5)");
+                return;
+            }
+
+            finalOvertimeHours = parsedHours;
+
+            // Handle Rate Validation
+            if (overtimeRate) {
+                const parsedRate = parseFloat(overtimeRate);
+                if (isNaN(parsedRate) || parsedRate < 0) {
+                    alert("שגיאה: תעריף שעות נוספות לא תקין");
+                    return;
+                }
+                finalOvertimeRate = parsedRate;
+            } else {
+                // If user left rate empty, use settings (or let backend handle null)
+                finalOvertimeRate = overtimeRateFromSettings || null;
+            }
+        }
+
+        // --- 3. Send to Server ---
         try {
             const payload = {
                 shiftCode: selectedShiftCode,
                 date: selectedDate,
                 startTime,
                 endTime,
-                overtimeHours: overtimeHours ? Number(overtimeHours) : 0,
-                overtimeHourlyRate: overtimeRate ? Number(overtimeRate) : (overtimeHours ? overtimeRateFromSettings : null),
+                // Use the validated numbers
+                overtimeHours: finalOvertimeHours,
+                overtimeHourlyRate: finalOvertimeRate,
             };
 
             if (editShiftId) {
@@ -207,8 +254,9 @@ export default function HomePage() {
             closeAddModal();
             refreshSummary();
             refreshUser();
-        } catch {
-            alert("שגיאה בשמירה");
+        } catch (error) {
+            console.error("Save error:", error);
+            alert("שגיאה בשמירה, אנא נסה שנית");
         }
     }
 
@@ -233,6 +281,29 @@ export default function HomePage() {
             setDeleteShiftId(null);
         } catch (error) {
             console.error("Error deleting shift:", error);
+        }
+    }
+
+    async function handleEndShift() {
+        if (!endShiftId) return;
+
+        // 1. Optimistic UI update (Update screen immediately)
+        const nowStr = dayjs().format("HH:mm");
+        setEndedLocalIds(prev => [...prev, endShiftId]);
+        setRecentShifts(prev => prev.map(s =>
+            s.id === endShiftId ? { ...s, endTime: nowStr, isEnded: true } : s
+        ));
+        setEndShiftId(null); // Close modal immediately
+
+        // 2. Server call
+        try {
+            await api.post(`/shifts/${endShiftId}/end`);
+            // 3. Refresh real data to ensure salary calc is correct
+            refreshSummary();
+            refreshUser();
+        } catch (error) {
+            console.error("Error ending shift:", error);
+            alert("שגיאה בסיום המשמרת");
         }
     }
 
@@ -361,19 +432,10 @@ export default function HomePage() {
                                                 <div className="absolute left-0 top-9 w-36 bg-white rounded-xl shadow-xl border border-zinc-200/60 overflow-hidden z-20">
                                                     {ongoing && (
                                                         <button
-                                                            onClick={async (e) => {
+                                                            onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 setActiveMenuId(null);
-                                                                if (window.confirm("לסיים משמרת?")) {
-                                                                    const nowStr = dayjs().format("HH:mm");
-                                                                    setEndedLocalIds(prev => [...prev, item.id]);
-                                                                    setRecentShifts(prev => prev.map(s =>
-                                                                        s.id === item.id ? { ...s, endTime: nowStr, isEnded: true } : s
-                                                                    ));
-                                                                    await api.post(`/shifts/${item.id}/end`);
-                                                                    refreshSummary();
-                                                                    refreshUser();
-                                                                }
+                                                                setEndShiftId(item.id); // <--- Triggers the modal
                                                             }}
                                                             className="w-full px-4 py-2.5 text-xs font-medium text-emerald-600 hover:bg-emerald-50 text-right flex items-center justify-end gap-2"
                                                         >
@@ -550,6 +612,12 @@ export default function HomePage() {
                                             step="0.25"
                                             value={overtimeHours}
                                             onChange={(e) => setOvertimeHours(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                // Prevent 'e', '-', '+'
+                                                if (["e", "E", "-", "+"].includes(e.key)) {
+                                                    e.preventDefault();
+                                                }
+                                            }}
                                             className="w-full bg-white border border-zinc-200 rounded-lg py-2 px-3 text-sm text-center focus:outline-none"
                                             placeholder="0"
                                         />
@@ -642,6 +710,40 @@ export default function HomePage() {
                                 className="flex-1 bg-red-600 text-white py-2.5 rounded-xl font-medium hover:bg-red-700 active:scale-95 transition-all shadow-sm"
                             >
                                 מחק
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* End Shift Modal */}
+            {endShiftId && (
+                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-xs p-6" dir="rtl">
+                        <div className="flex flex-col items-center justify-center text-center mb-6">
+                            <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center mb-4">
+                                <Clock className="w-6 h-6 text-emerald-600" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-zinc-900 mb-1">סיום משמרת</h3>
+                            <p className="text-sm text-zinc-500 leading-relaxed">
+                                האם ברצונך לסיים את המשמרת כעת?
+                                <br />
+                                שעת הסיום תעודכן לשעה {dayjs().format("HH:mm")}.
+                            </p>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setEndShiftId(null)}
+                                className="flex-1 py-2.5 rounded-xl font-medium text-zinc-700 bg-zinc-50 hover:bg-zinc-100 transition-colors"
+                            >
+                                ביטול
+                            </button>
+                            <button
+                                onClick={handleEndShift}
+                                className="flex-1 bg-emerald-600 text-white py-2.5 rounded-xl font-medium hover:bg-emerald-700 active:scale-95 transition-all shadow-sm shadow-emerald-200"
+                            >
+                                סיים משמרת
                             </button>
                         </div>
                     </div>

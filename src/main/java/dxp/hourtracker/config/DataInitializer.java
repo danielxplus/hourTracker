@@ -24,7 +24,7 @@ public class DataInitializer implements CommandLineRunner {
                 "משמרת בוקר",
                 LocalTime.of(6, 30),
                 LocalTime.of(15, 30),
-                9.0
+                8.0
         );
 
         createIfMissing(
@@ -32,7 +32,7 @@ public class DataInitializer implements CommandLineRunner {
                 "משמרת ערב",
                 LocalTime.of(14, 30),
                 LocalTime.of(23, 15),
-                8.75
+                8.0
         );
 
         createIfMissing(
@@ -40,14 +40,14 @@ public class DataInitializer implements CommandLineRunner {
                 "משמרת לילה",
                 LocalTime.of(22, 30),
                 LocalTime.of(7, 15),
-                8.75
+                8.45
         );
         createIfMissing(
                 "MIDDLE",
                 "משמרת מידל",
                 LocalTime.of(11, 30),
                 LocalTime.of(20, 30),
-                8.75
+                8.0
         );
     }
 

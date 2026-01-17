@@ -214,7 +214,7 @@ export default function SettingsPage() {
                 <LogOut className="w-6 h-6 text-red-600" />
               </div>
               <h3 className="text-lg font-semibold text-zinc-900 mb-1">התנתקות מהמערכת</h3>
-              <p className="text-sm text-zinc-500">האם אתה בטוח שברצונך להתנתק?</p>
+              <p className="text-sm text-zinc-500">האם את/ה בטוח/ה שברצונך להתנתק?</p>
             </div>
             <div className="flex gap-2">
               <button

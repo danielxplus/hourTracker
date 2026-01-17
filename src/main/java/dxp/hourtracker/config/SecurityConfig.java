@@ -47,8 +47,11 @@ public class SecurityConfig {
                         .defaultSuccessUrl("/", true)
                 )
                 .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessUrl("/") // Redirect to home on logout, not /login
+                        .logoutUrl("/api/logout")
+                        .logoutSuccessHandler((request, response, authentication) -> {
+                            response.setStatus(200); // Return OK instead of redirecting
+                        })
+                        .permitAll()
                 );
 
         return http.build();
