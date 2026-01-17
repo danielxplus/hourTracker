@@ -160,6 +160,7 @@ public class UserApiController {
         if (principal == null) {
             response.put("hourlyRate", 0);
             response.put("overtimeHourlyRate", 0);
+            response.put("shabatHourlyRate", 0);
             return response;
         }
         String userId = principal.getName();
@@ -174,6 +175,7 @@ public class UserApiController {
                     s.setUserId(userId);
                     s.setHourlyRate(defaultBase);
                     s.setOvertimeHourlyRate(defaultBase * 1.25);
+                    s.setShabatHourlyRate(defaultBase * 1.50);
                     return userSettingsRepository.save(s);
                 });
 
@@ -187,8 +189,13 @@ public class UserApiController {
                 ? settings.getOvertimeHourlyRate()
                 : (currentRate * 1.25);
 
+        Double currentShabat = (settings.getShabatHourlyRate() != null && settings.getShabatHourlyRate() > 0)
+                ? settings.getShabatHourlyRate()
+                : (currentRate * 1.50);
+
         response.put("hourlyRate", currentRate);
         response.put("overtimeHourlyRate", currentOvertime);
+        response.put("shabatHourlyRate", currentShabat);
         return response;
     }
 
@@ -200,6 +207,7 @@ public class UserApiController {
         if (principal == null) {
             response.put("hourlyRate", 0);
             response.put("overtimeHourlyRate", 0);
+            response.put("shabatHourlyRate", 0);
             return response;
         }
         String userId = principal.getName();
@@ -222,6 +230,15 @@ public class UserApiController {
             overtimeHourlyRate = 63.75;
         }
 
+        Double shabatHourlyRate = null;
+        Object shabatValue = body.get("shabatHourlyRate");
+        if (shabatValue instanceof Number number) {
+            shabatHourlyRate = number.doubleValue();
+        }
+        if (shabatHourlyRate == null) {
+            shabatHourlyRate = 76.5; // 51 * 1.5
+        }
+
         UserSettings settings = userSettingsRepository
                 .findByUserId(userId)
                 .orElseGet(() -> {
@@ -231,10 +248,12 @@ public class UserApiController {
                 });
         settings.setHourlyRate(hourlyRate);
         settings.setOvertimeHourlyRate(overtimeHourlyRate);
+        settings.setShabatHourlyRate(shabatHourlyRate);
         userSettingsRepository.save(settings);
 
         response.put("hourlyRate", settings.getHourlyRate());
         response.put("overtimeHourlyRate", settings.getOvertimeHourlyRate());
+        response.put("shabatHourlyRate", settings.getShabatHourlyRate());
         return response;
     }
 

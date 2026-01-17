@@ -7,7 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "user_settings", uniqueConstraints = @UniqueConstraint(columnNames = "userId"))@Data
+@Table(name = "user_settings", uniqueConstraints = @UniqueConstraint(columnNames = "userId"))
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -23,4 +24,6 @@ public class UserSettings {
     private Double hourlyRate;
 
     private Double overtimeHourlyRate;
+
+    private Double shabatHourlyRate;
 }
