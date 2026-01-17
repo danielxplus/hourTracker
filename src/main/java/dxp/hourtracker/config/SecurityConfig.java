@@ -2,10 +2,12 @@ package dxp.hourtracker.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus; // Import this
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint; // Import this
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -29,22 +31,25 @@ public class SecurityConfig {
                                 "/static/**",
                                 "/assets/**",
                                 "/favicon.ico",
-                                "/manifest.json",
-                                "/logo192.png",
-                                "/logo512.png",
+                                "/clock-137-32.png",
+                                "/login",
                                 "/oauth2/**"
                         ).permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
                 )
+                .exceptionHandling(e -> e
+
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                )
                 .oauth2Login(oauth -> oauth
+                        .loginPage("/login")
                         .defaultSuccessUrl("/", true)
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
-                        .logoutSuccessUrl("/login")
-                )
-                .httpBasic(Customizer.withDefaults());
+                        .logoutSuccessUrl("/") // Redirect to home on logout, not /login
+                );
 
         return http.build();
     }
@@ -52,17 +57,17 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000",
-                "https://hourtracker-nxr7.onrender.com/"));
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:3000",
+                "https://hourtracker-nxr7.onrender.com"
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 }
-
-
