@@ -1,42 +1,63 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { User, DollarSign, LogOut, Save, UserCircle } from "lucide-react";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/client";
 
 export default function SettingsPage() {
   const { user, refreshUser, logout } = useAuth();
-  const navigate = useNavigate();
-  const [hourlyRate, setHourlyRate] = useState(0);
-  const [overtimeHourlyRate, setOvertimeHourlyRate] = useState(0);
+
+  const [hourlyRate, setHourlyRate] = useState(51);
+  const [overtimeHourlyRate, setOvertimeHourlyRate] = useState(63.75);
   const [displayName, setDisplayName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingName, setIsSavingName] = useState(false);
 
   useEffect(() => {
     async function load() {
       try {
         const res = await api.get("/settings");
-        setHourlyRate(res.data.hourlyRate ?? 0);
-        setOvertimeHourlyRate(res.data.overtimeHourlyRate ?? 0);
+        // Backend now defaults to 51/63.75 for new users, but we also handled 0.0 case in backend.
+        // We use 'hourlyRate' as per backend API, NOT 'baseHourlyRate'.
+        const fetchedRate = res.data.hourlyRate || 51;
+        setHourlyRate(fetchedRate);
+
+        // If overtime is missing or 0, auto-calc, otherwise use fetched
+        const fetchedOvertime = res.data.overtimeHourlyRate;
+        if (!fetchedOvertime) {
+          setOvertimeHourlyRate(fetchedRate * 1.25);
+        } else {
+          setOvertimeHourlyRate(fetchedOvertime);
+        }
+
         if (user) {
           setDisplayName(user.displayName || "");
         }
       } catch {
-        // ignore
+        // quiet fail
       }
     }
     load();
   }, [user]);
 
-  async function handleSave() {
+  function handleRateChange(e) {
+    const val = e.target.value;
+    setHourlyRate(val);
+    // Auto-calculate overtime when base rate changes (optional UX choice, highly requested)
+    if (val) {
+      setOvertimeHourlyRate((parseInt(val) * 1.25).toFixed(2));
+    }
+  }
+
+  async function handleSaveSalary() {
     setIsSaving(true);
     try {
       await api.post("/settings", {
         hourlyRate: Number(hourlyRate),
         overtimeHourlyRate: Number(overtimeHourlyRate),
       });
-    } catch {
-      // ignore for now
+    } catch (e) {
+      console.error(e);
     } finally {
       setIsSaving(false);
     }
@@ -44,113 +65,138 @@ export default function SettingsPage() {
 
   async function handleSaveName() {
     if (!displayName.trim()) return;
-    setIsSaving(true);
+    setIsSavingName(true);
     try {
       await api.post("/me/display-name", { displayName: displayName.trim() });
       await refreshUser();
     } catch {
       // ignore
     } finally {
-      setIsSaving(false);
+      setIsSavingName(false);
     }
-  }
-
-  async function handleLogout() {
-    await logout();
   }
 
   return (
     <Layout>
-      <header className="mb-6">
-        <h1 className="text-xl font-semibold text-slate-900 text-right">
+      <header className="mb-8 text-right">
+        <h1 className="text-2xl font-bold text-slate-900">
           הגדרות
         </h1>
-        <p className="text-xs text-slate-500 text-right">
-          נהל את פרטי השכר שלך
+        <p className="text-sm text-slate-500 mt-1">
+          ניהול פרופיל והגדרות שכר
         </p>
       </header>
 
-      <section className="space-y-4">
-        <div className="rounded-3xl bg-white shadow-soft p-4 space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex flex-col items-end gap-1">
-              <span className="text-sm font-medium text-slate-800">
-                שם תצוגה
-              </span>
+      <div className="space-y-6 text-right" dir="rtl">
+        {/* Profile Card */}
+        <section className="bg-white rounded-3xl shadow-[0_2px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 overflow-hidden">
+          <div className="px-6 pt-6 pb-3 border-b border-slate-50">
+            <div className="flex items-center gap-3 mb-1">
+              <div className="p-2 bg-violet-50 rounded-xl">
+                <UserCircle className="w-5 h-5 text-violet-600" />
+              </div>
+              <h2 className="text-lg font-bold text-slate-800">שם תצוגה</h2>
             </div>
-            <div className="flex items-center gap-2">
+          </div>
+
+          <div className="px-6 pb-6 pt-3">
+            <div className="flex gap-3">
               <input
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="w-32 rounded-xl border border-slate-200 px-3 py-1 text-sm text-right"
-                placeholder="הזן שם"
+                className="flex-1 bg-slate-50 border border-slate-200 text-slate-900 text-right text-sm rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 block w-full p-3 outline-none transition-all"
+                placeholder="הכנס שם מלא"
               />
               <button
-                type="button"
                 onClick={handleSaveName}
-                disabled={isSaving || !displayName.trim()}
-                className="rounded-xl bg-primary text-white px-3 py-1 text-xs font-medium disabled:opacity-50"
+                disabled={isSavingName || !displayName.trim()}
+                className="px-6 py-3 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 disabled:opacity-90 transition-all shadow-md shadow-violet-200 whitespace-nowrap min-w-[6rem]"
               >
                 שמור
               </button>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div className="rounded-3xl bg-white shadow-soft p-4 space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex flex-col items-end gap-1">
-              <span className="text-sm font-medium text-slate-800">
-                שכר שעתי
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">₪</span>
-              <input
-                type="number"
-                value={hourlyRate}
-                onChange={(e) => setHourlyRate(e.target.value)}
-                className="w-20 rounded-xl border border-slate-200 px-2 py-1 text-sm text-left"
-              />
+        {/* Salary Settings Card */}
+        <section className="bg-white rounded-3xl shadow-[0_2px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 overflow-hidden">
+          <div className="p-6 border-b border-slate-50">
+            <div className="flex items-center gap-3 mb-1">
+              <div className="p-2 bg-emerald-50 rounded-xl">
+                <DollarSign className="w-5 h-5 text-emerald-600" />
+              </div>
+              <h2 className="text-lg font-bold text-slate-800">הגדרות שכר</h2>
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-4 pt-2 border-t border-slate-100">
-            <div className="flex flex-col items-end gap-1">
-              <span className="text-sm font-medium text-slate-800">
+          <div className="px-6 pb-6 pt-3 space-y-6">
+            {/* Hourly Rate */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2 text-right">
+                שכר שעתי (בסיס)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  step="1"
+                  value={hourlyRate}
+                  onChange={handleRateChange}
+                  className="bg-slate-50 border border-slate-200 text-slate-900 text-right text-lg font-medium rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 block w-full p-4 pr-12 outline-none transition-all"
+                  placeholder="51"
+                  dir="ltr"
+                />
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                  <span className="text-slate-400 font-medium">₪</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Overtime Rate */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2 text-right">
                 שכר שעות נוספות
-              </span>
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  step="0.1"
+                  value={overtimeHourlyRate}
+                  onChange={(e) => setOvertimeHourlyRate(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 text-slate-900 text-right text-lg font-medium rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 block w-full p-4 pr-12 outline-none transition-all"
+                  placeholder="63.75"
+                  dir="ltr"
+                />
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                  <span className="text-slate-400 font-medium">₪</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">₪</span>
-              <input
-                type="number"
-                value={overtimeHourlyRate}
-                onChange={(e) => setOvertimeHourlyRate(e.target.value)}
-                className="w-20 rounded-xl border border-slate-200 px-2 py-1 text-sm text-left"
-              />
-            </div>
+
+            <button
+              onClick={handleSaveSalary}
+              disabled={isSaving}
+              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-base font-semibold py-4 rounded-xl shadow-md shadow-emerald-200 transition-all disabled:opacity-90"
+            >
+              <Save className="w-5 h-5" />
+              שמור הגדרות שכר
+            </button>
           </div>
-        </div>
+        </section>
 
+        {/* Logout Button */}
         <button
-          type="button"
-          onClick={handleSave}
-          disabled={isSaving}
-          className="w-full rounded-2xl bg-primary text-white py-3 text-sm font-semibold shadow-soft disabled:opacity-50"
+          onClick={logout}
+          className="w-full bg-white border border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 font-medium rounded-2xl py-4 flex items-center justify-center gap-2 transition-all"
         >
-          שמירת הגדרות
+          <LogOut className="w-5 h-5" />
+          התנתק מהמערכת
         </button>
 
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="w-full rounded-2xl border border-red-200 bg-red-50 text-red-600 py-3 text-sm font-semibold"
-        >
-          התנתק
-        </button>
-      </section>
+        <p className="text-center text-xs text-slate-300 mt-8">
+          HourTracker v1.0.0 © by dxp
+        </p>
+      </div>
     </Layout>
   );
 }

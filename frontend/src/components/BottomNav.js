@@ -1,35 +1,53 @@
 import { NavLink } from "react-router-dom";
+import { Home, Clock, Settings } from "lucide-react";
 
 const tabs = [
-  { to: "/", label: "בית", icon: "🏠", exact: true },
-  { to: "/history", label: "היסטוריה", icon: "⏱️" },
-  { to: "/settings", label: "הגדרות", icon: "⚙️" },
+    { to: "/", label: "בית", icon: Home, exact: true },
+    { to: "/history", label: "היסטוריה", icon: Clock },
+    { to: "/settings", label: "הגדרות", icon: Settings },
 ];
 
 export default function BottomNav() {
-  return (
-    <nav className="fixed bottom-0 inset-x-0 bg-white/90 backdrop-blur border-t border-slate-200">
-      <div className="max-w-md mx-auto flex justify-between px-6 py-2">
-        {tabs.map((tab) => (
-          <NavLink
-            key={tab.to}
-            to={tab.to}
-            end={tab.exact}
-            className={({ isActive }) =>
-              [
-                "flex flex-col items-center justify-center text-xs transition-colors",
-                isActive ? "text-primary" : "text-slate-400",
-              ].join(" ")
-            }
-          >
-            <span className="text-lg mb-0.5">{tab.icon}</span>
-            <span>{tab.label}</span>
-          </NavLink>
-        ))}
-      </div>
-    </nav>
-  );
+    return (
+        <nav className="fixed bottom-0 inset-x-0 bg-white/80 backdrop-blur-xl border-t border-zinc-200/60">
+            <div className="max-w-md mx-auto flex justify-around px-4 py-3">
+                {tabs.map((tab) => (
+                    <NavLink
+                        key={tab.to}
+                        to={tab.to}
+                        end={tab.exact}
+                        className={({ isActive }) =>
+                            [
+                                "relative flex flex-col items-center gap-1 px-6 py-2 rounded-xl transition-all duration-200",
+                                isActive
+                                    ? "text-purple-600"
+                                    : "text-zinc-400 hover:text-zinc-600",
+                            ].join(" ")
+                        }
+                    >
+                        {({ isActive }) => (
+                            <>
+                                {isActive && (
+                                    <div className="absolute inset-0 bg-zinc-100 rounded-xl -z-10" />
+                                )}
+                                <tab.icon
+                                    className={[
+                                        "w-5 h-5 transition-transform duration-200",
+                                        isActive ? "scale-110" : ""
+                                    ].join(" ")}
+                                    strokeWidth={isActive ? 2.5 : 2}
+                                />
+                                <span className={[
+                                    "text-xs font-medium transition-all",
+                                    isActive ? "opacity-100" : "opacity-80"
+                                ].join(" ")}>
+                  {tab.label}
+                </span>
+                            </>
+                        )}
+                    </NavLink>
+                ))}
+            </div>
+        </nav>
+    );
 }
-
-
-

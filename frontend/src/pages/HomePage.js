@@ -1,10 +1,11 @@
-import {useEffect, useMemo, useState} from "react";
-import {Sun, Sunset, Moon, Clock, X, Plus, Wallet} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Sun, Sunset, Moon, Clock, X, Plus, Wallet, Pencil, Trash2, MoreVertical } from "lucide-react";
 import Layout from "../components/Layout";
-import StatCard from "../components/StatCard";
-import {useAuth} from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 import api from "../api/client";
 import dayjs from "dayjs";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 function getGreeting(hour) {
     if (hour >= 5 && hour < 12) return "בוקר טוב";
@@ -14,7 +15,7 @@ function getGreeting(hour) {
 }
 
 export default function HomePage() {
-    const {user, refreshUser} = useAuth();
+    const { user, refreshUser } = useAuth();
     const [summary, setSummary] = useState(null);
     const [recentShifts, setRecentShifts] = useState([]);
     const [shiftTypes, setShiftTypes] = useState([]);
@@ -30,6 +31,15 @@ export default function HomePage() {
     const [overtimeRateFromSettings, setOvertimeRateFromSettings] = useState(0);
     const [tipAmount, setTipAmount] = useState("");
     const [tipShiftId, setTipShiftId] = useState(null);
+    const [editShiftId, setEditShiftId] = useState(null);
+    const [endedLocalIds, setEndedLocalIds] = useState([]);
+    const [activeMenuId, setActiveMenuId] = useState(null);
+
+    useEffect(() => {
+        const handleClickOutside = () => setActiveMenuId(null);
+        window.addEventListener('click', handleClickOutside);
+        return () => window.removeEventListener('click', handleClickOutside);
+    }, []);
 
     const shiftTypeMap = useMemo(() => {
         const map = {};
@@ -40,115 +50,72 @@ export default function HomePage() {
         return map;
     }, [shiftTypes]);
 
-
-    useEffect(() => {
-        async function load() {
-            try {
-                refreshUser();
-
-                // Load data with individual error handling
-                const summaryPromise = api.get("/summary").catch(() => null);
-                const historyPromise = api.get("/history").catch(() => null);
-                const typesPromise = api.get("/shift-types").catch((err) => {
-                    console.error("Error loading shift types:", err);
-                    // Return default shift types if API fails
-                    return {
-                        data: [{
-                            code: 'morning',
-                            nameHe: 'בוקר',
-                            defaultStart: '06:00',
-                            defaultEnd: '14:00',
-                            emoji: Sun
-                        }, {
-                            code: 'evening',
-                            nameHe: 'ערב',
-                            defaultStart: '14:00',
-                            defaultEnd: '22:00',
-                            emoji: Sunset
-                        }, {code: 'night', nameHe: 'לילה', defaultStart: '22:00', defaultEnd: '06:00', emoji: Moon}]
-                    };
-                });
-                const settingsPromise = api.get("/settings").catch(() => ({data: {overtimeHourlyRate: 0}}));
-
-                const [summaryRes, historyRes, typesRes, settingsRes] = await Promise.all([summaryPromise, historyPromise, typesPromise, settingsPromise]);
-
-                if (summaryRes) setSummary(summaryRes.data);
-                if (historyRes && historyRes.data.items) {
-                    // Get the 3 most recent shifts
-                    const recent = historyRes.data.items.slice(0, 3);
-                    setRecentShifts(recent);
-                }
-                console.log("Shift types loaded:", typesRes.data);
-                setShiftTypes(typesRes.data || []);
-                setOvertimeRateFromSettings(settingsRes.data.overtimeHourlyRate || 0);
-            } catch (e) {
-                console.error("Error loading data:", e);
-                // Set default shift types as fallback
-                setShiftTypes([{
-                    code: 'morning',
-                    nameHe: 'משמרת בוקר',
-                    defaultStart: '06:30',
-                    defaultEnd: '15:30'
-                }, {code: 'evening', nameHe: 'משמרת ערב', defaultStart: '14:30', defaultEnd: '23:15'}, {
-                    code: 'night',
-                    nameHe: 'משמרת לילה',
-                    defaultStart: '22:30',
-                    defaultEnd: '07:15'
-                }, {code: 'middle', nameHe: 'משמרת מידל', defaultStart: '11:30', defaultEnd: '20:30'}]);
-            }
-        }
-
-        load();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
     const shiftConfig = {
         morning: {
-            icon: Sun, gradient: 'from-amber-300 to-orange-500', hoverGradient: 'from-amber-400 to-orange-600'
-        }, evening: {
-            icon: Sunset, gradient: 'from-orange-500 to-blue-700', hoverGradient: 'from-orange-600 to-blue-800'
-        }, night: {
-            icon: Moon, gradient: 'from-blue-700 to-violet-800', hoverGradient: 'from-blue-800 to-violet-900'
-        }, middle: {
-            icon: Clock, gradient: 'from-teal-400 to-emerald-500',
+            icon: Sun,
+            color: 'text-amber-600',
+            bg: 'bg-amber-50',
+            border: 'border-amber-200',
+            gradient: 'from-amber-400 to-orange-500',
+            activeGradient: 'from-amber-500 to-orange-600'
+        },
+        evening: {
+            icon: Sunset,
+            color: 'text-orange-600',
+            bg: 'bg-orange-50',
+            border: 'border-orange-200',
+            gradient: 'from-orange-400 to-pink-500',
+            activeGradient: 'from-orange-500 to-pink-600'
+        },
+        night: {
+            icon: Moon,
+            color: 'text-indigo-600',
+            bg: 'bg-indigo-50',
+            border: 'border-indigo-200',
+            gradient: 'from-indigo-500 to-blue-800',
+            activeGradient: 'from-indigo-500 to-purple-600'
+        },
+        middle: {
+            icon: Clock,
+            color: 'text-teal-600',
+            bg: 'bg-teal-50',
+            border: 'border-teal-200',
+            gradient: 'from-teal-400 to-emerald-500',
+            activeGradient: 'from-teal-500 to-emerald-600'
         }
     };
+
+    const userName = user?.displayName || "אורח";
 
     const greeting = useMemo(() => {
         const hour = new Date().getHours();
         return getGreeting(hour);
     }, []);
 
-    const userName = user?.displayName || "אורח";
-
     async function refreshSummary() {
         try {
-            const [summaryRes, historyRes] = await Promise.all([api.get("/summary"), api.get("/history")]);
+            const [summaryRes, historyRes, settingsRes] = await Promise.all([
+                api.get("/summary"),
+                api.get("/history"),
+                api.get("/settings")
+            ]);
             setSummary(summaryRes.data);
             if (historyRes.data.items) {
-                const recent = historyRes.data.items.slice(0, 3);
-                setRecentShifts(recent);
+                setRecentShifts(historyRes.data.items.slice(0, 3));
+            }
+            if (settingsRes.data.overtimeHourlyRate) {
+                setOvertimeRateFromSettings(settingsRes.data.overtimeHourlyRate);
             }
         } catch {
             // ignore
         }
     }
 
-    const calculateHours = (start, end) => {
-        if (!start || !end) return 0;
-        const [startH, startM] = start.split(':').map(Number);
-        const [endH, endM] = end.split(':').map(Number);
-        let hours = endH - startH;
-        let minutes = endM - startM;
-        if (minutes < 0) {
-            hours -= 1;
-            minutes += 60;
-        }
-        if (hours < 0) hours += 24;
-        return hours + minutes / 60;
-    };
-
-    const totalHours = calculateHours(startTime, endTime);
+    useEffect(() => {
+        refreshUser();
+        refreshSummary();
+        api.get("/shift-types").then(res => setShiftTypes(res.data));
+    }, []);
 
     const handleShiftSelect = (shift) => {
         setSelectedShiftCode(shift.code);
@@ -156,393 +123,463 @@ export default function HomePage() {
         setEndTime(shift.defaultEnd);
     };
 
-    async function handleCreateShift() {
-        if (!selectedShiftCode || !selectedDate) return;
-        try {
-            await api.post("/shifts", {
-                shiftCode: selectedShiftCode,
-                date: selectedDate,
-                startTime,
-                endTime,
-                overtimeHours: overtimeHours ? Number(overtimeHours) : 0,
-                overtimeHourlyRate: overtimeRate
-                    ? Number(overtimeRate)
-                    : (overtimeHours ? overtimeRateFromSettings : null),
-            });
-            setIsAddOpen(false);
-            setSelectedShiftCode(null);
-            setStartTime("");
-            setEndTime("");
-            setIsOvertimeOpen(false);
-            setOvertimeHours("");
-            setOvertimeRate("");
-            await refreshSummary();
-            await refreshUser();
-        } catch {
-            // likely not logged in yet
-        }
-    }
+    const handleEditShift = (shift) => {
+        setEditShiftId(shift.id);
+        setSelectedDate(shift.date);
+        const t = shiftTypeMap[shift.shiftType];
+        if (t) setSelectedShiftCode(t.code);
+        setStartTime(shift.startTime?.slice(0, 5) || "");
+        setEndTime(shift.endTime?.slice(0, 5) || "");
+        setOvertimeHours(shift.overtimeHours || "");
+        setOvertimeRate(shift.overtimeHourlyRate || "");
+        setIsOvertimeOpen(!!shift.overtimeHours);
+        setIsAddOpen(true);
+        setActiveMenuId(null);
+    };
 
-    const handleOpenTip = (shiftId) => {
+    const handleOpenTip = (shiftId, currentTip) => {
         setTipShiftId(shiftId);
-        setTipAmount("");
+        setTipAmount(currentTip ? String(currentTip) : "");
         setIsTipOpen(true);
     };
 
     async function handleAddTip() {
         if (!tipShiftId || !tipAmount) return;
         try {
-            await api.post(`/shifts/${tipShiftId}/tip`, {
-                tipAmount: Number(tipAmount)
-            });
+            await api.post(`/shifts/${tipShiftId}/tip`, { tipAmount: Number(tipAmount) });
             setIsTipOpen(false);
             setTipShiftId(null);
             setTipAmount("");
-            await refreshSummary();
-            await refreshUser();
+            refreshSummary();
+            refreshUser();
         } catch (error) {
             console.error("Error adding tip:", error);
         }
     }
 
-    function formatDateForDisplay(dateStr) {
-        const date = new Date(dateStr);
-        const day = String(date.getDate()).padStart(2, "0");
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const year = date.getFullYear();
-        return `${day}-${month}-${year}`;
+    async function handleCreateShift() {
+        if (!selectedShiftCode || !selectedDate) return;
+        try {
+            const payload = {
+                shiftCode: selectedShiftCode,
+                date: selectedDate,
+                startTime,
+                endTime,
+                overtimeHours: overtimeHours ? Number(overtimeHours) : 0,
+                overtimeHourlyRate: overtimeRate ? Number(overtimeRate) : (overtimeHours ? overtimeRateFromSettings : null),
+            };
+
+            if (editShiftId) {
+                await api.put(`/shifts/${editShiftId}`, payload);
+            } else {
+                await api.post("/shifts", payload);
+            }
+
+            closeAddModal();
+            refreshSummary();
+            refreshUser();
+        } catch {
+            alert("שגיאה בשמירה");
+        }
     }
 
-    return (<Layout>
-        <header className="mb-6">
-            <div className="flex flex-col gap-1 text-right">
-                <h1 className="text-xl font-semibold text-slate-900">
+    const closeAddModal = () => {
+        setIsAddOpen(false);
+        setEditShiftId(null);
+        setSelectedShiftCode(null);
+        setStartTime("");
+        setEndTime("");
+        setIsOvertimeOpen(false);
+        setOvertimeHours("");
+        setOvertimeRate("");
+        setSelectedDate(new Date().toISOString().slice(0, 10));
+    };
+
+    return (
+        <Layout>
+            <header className="mb-6 pt-2" dir="rtl">
+                <h1 className="text-xl font-medium text-zinc-900 mb-0.5">
                     {greeting}, {userName}
                 </h1>
-                <p className="text-xs text-slate-500">
-                    {new Date().toLocaleDateString("he-IL", {
-                        weekday: "long", month: "long", day: "numeric", year: "numeric",
-                    })}
+                <p className="text-xs text-zinc-500">
+                    {new Date().toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" })}
                 </p>
-            </div>
-        </header>
+            </header>
 
-        <section className="space-y-3 mb-4">
-            <div className="grid grid-cols-2 gap-3">
-                <StatCard
-                    title="שעות השבוע"
-                    value={(summary?.weekHours ?? 0).toFixed(1)}
-                    tone="primary"
-                />
-                <StatCard
-                    title="שעות החודש"
-                    value={(summary?.monthHours ?? 0).toFixed(1)}
-                    tone="green"
-                />
-            </div>
-            <StatCard
-                title="משכורת צפויה החודש"
-                value={`₪${(summary?.expectedMonthSalary ?? 0).toFixed(0)}`}
-                subtitle={`₪${(summary?.totalTips ?? 0).toFixed(0)} בטיפים`}
-                tone="dark"
-                align="center"
-            />
-        </section>
-
-        <section className="mt-6">
-            <h2 className="text-sm font-semibold text-slate-800 mb-3">
-                משמרות אחרונות
-            </h2>
-            <div className="space-y-3">
-                            {recentShifts.map((item) => {
-
-                const now = dayjs();
-                let ongoing = false;
-
-                const type = shiftTypeMap[item.shiftType];
-
-                if (type?.defaultStart && type?.defaultEnd) {
-                    const start = dayjs(`${item.date}T${type.defaultStart}`);
-                    let end = dayjs(`${item.date}T${type.defaultEnd}`);
-
-                    // Night shift → next day
-                    if (end.isBefore(start)) {
-                        end = end.add(1, "day");
-                    }
-
-                    ongoing = now.isAfter(start) && now.isBefore(end);
-                }
-
-                return (
-                        <article
-                            key={item.id}
-                            className={`rounded-2xl bg-white border px-4 py-4 shadow-sm transition-all duration-300 ${
-                                ongoing 
-                                    ? 'border-emerald-400 shadow-md ring-1 ring-emerald-50' 
-                                    : 'border-slate-200'
-                            }`}
-                        >
-                            {/* Top Row: Shift Type and Salary */}
-                            <div className="flex items-center justify-between mb-1">
-                            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                {item.shiftType || item.name}
-                                {ongoing && (
-                                    <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-wider border border-emerald-100">
-                                        <span className="relative flex h-2 w-2">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                        </span>
-                                        פעיל
-                                    </span>
-                                )}
-                            </h3>
-                                <span className="text-2xl font-bold text-emerald-600">
-                                    ₪{item.salary.toFixed(0)}
-                                </span>
+            {/* Stats - Bento Grid */}
+            <section className="mb-6" dir="rtl">
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2 bg-zinc-900 rounded-2xl p-5 text-white">
+                        <div className="text-xs text-zinc-400 mb-1">משכורת צפויה</div>
+                        <div className="text-3xl font-semibold mb-2">
+                            ₪{(summary?.expectedMonthSalary ?? 0).toFixed(0)}
+                        </div>
+                        {summary?.totalTips > 0 && (
+                            <div className="text-xs text-zinc-400">
+                                לא כולל ₪{summary.totalTips.toFixed(0)} בטיפים
                             </div>
+                        )}
+                    </div>
+                    <div className="bg-white rounded-2xl border border-zinc-200/60 p-4">
+                        <div className="text-xs text-zinc-500 mb-1">שבועי</div>
+                        <div className="text-2xl font-semibold text-zinc-900">
+                            {(summary?.weekHours ?? 0).toFixed(1)}
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-2xl border border-zinc-200/60 p-4">
+                        <div className="text-xs text-zinc-500 mb-1">חודשי</div>
+                        <div className="text-2xl font-semibold text-zinc-900">
+                            {(summary?.monthHours ?? 0).toFixed(1)}
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-                            {/* Middle Row: Date and Total Hours */}
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-1 text-sm text-slate-500">
-                                    <span>{new Date(item.date).toLocaleDateString("he-IL", { weekday: "long" })}</span>
-                                    <span>•</span>
-                                    <span>{new Date(item.date).toLocaleDateString("he-IL", { day: "numeric", month: "short" })}</span>
-                                </div>
-                                <span className="text-sm font-medium text-slate-500">
-                                    {item.hours.toFixed(1)} שעות
-                                </span>
-                            </div>
+            {/* Recent Shifts */}
+            <section dir="rtl">
+                <h2 className="text-sm font-medium text-zinc-700 mb-3">פעילות אחרונה</h2>
+                <div className="space-y-2">
+                    {recentShifts.map((item) => {
+                        const now = dayjs();
+                        let ongoing = false;
 
-                            {/* Badges and Button... (rest of your code) */}
-                            <button
-                                onClick={() => handleOpenTip(item.id)}
-                                className="w-full rounded-xl bg-[#10b981] hover:bg-[#059669] text-white py-3 px-4 text-base font-bold flex items-center justify-center gap-2 transition-all shadow-sm"
+                        if (!item.isEnded && !endedLocalIds.includes(item.id)) {
+                            const formatTime = (t) => Array.isArray(t) ? `${String(t[0]).padStart(2, '0')}:${String(t[1]).padStart(2, '0')}` : (t?.slice(0, 5) || "");
+                            const formatDate = (d) => Array.isArray(d) ? `${d[0]}-${String(d[1]).padStart(2, '0')}-${String(d[2]).padStart(2, '0')}` : d;
+
+                            const dateStr = formatDate(item.date);
+                            const sTime = formatTime(item.startTime) || shiftTypeMap[item.shiftType]?.defaultStart;
+                            const eTime = formatTime(item.endTime) || shiftTypeMap[item.shiftType]?.defaultEnd;
+
+                            if (dateStr && sTime && eTime) {
+                                const start = dayjs(`${dateStr}T${sTime}`);
+                                let end = dayjs(`${dateStr}T${eTime}`);
+                                if (end.isBefore(start)) end = end.add(1, "day");
+                                ongoing = now.isAfter(start) && now.add(5, 'minute').isBefore(end);
+                            }
+                        }
+
+                        const config = shiftConfig[item.shiftType?.toLowerCase()] || shiftConfig.middle;
+                        const Icon = config.icon || Clock;
+
+                        return (
+                            <div
+                                key={item.id}
+                                className={`bg-white rounded-xl border p-4 transition-all ${
+                                    ongoing ? 'border-emerald-300 bg-emerald-50/30' : 'border-zinc-200/60'
+                                }`}
                             >
-                                <Wallet className="w-5 h-5" />
-                                הוסף טיפ
+                                <div className="flex items-center gap-3">
+                                    {/* Icon */}
+                                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${config.bg} ${config.color} flex-shrink-0`}>
+                                        <Icon className="w-5 h-5" />
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-0.5">
+                                            <h3 className="text-sm font-medium text-zinc-900 truncate">
+                                                {item.shiftType || item.name}
+                                            </h3>
+                                            {ongoing && (
+                                                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-zinc-500 truncate">
+                                            {new Date(item.date).toLocaleDateString("he-IL", { day: 'numeric', month: 'short' })}
+                                            <span className="mx-1.5">•</span>
+                                            {item.hours.toFixed(1)} שעות
+                                        </p>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                        <div className="text-right">
+                                            <div className="text-base font-semibold text-zinc-900">
+                                                ₪{item.salary.toFixed(0)}
+                                            </div>
+                                            {item.tip > 0 && (
+                                                <div className="text-[10px] text-emerald-600 font-medium">
+                                                    +₪{item.tip}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Menu */}
+                                        <div className="relative">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setActiveMenuId(activeMenuId === item.id ? null : item.id);
+                                                }}
+                                                className="p-2 -ml-2 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 active:bg-zinc-100 transition-colors"
+                                            >
+                                                <MoreVertical className="w-4 h-4" />
+                                            </button>
+
+                                            {activeMenuId === item.id && (
+                                                <div className="absolute left-0 top-9 w-36 bg-white rounded-xl shadow-xl border border-zinc-200/60 overflow-hidden z-20">
+                                                    {ongoing && (
+                                                        <button
+                                                            onClick={async (e) => {
+                                                                e.stopPropagation();
+                                                                setActiveMenuId(null);
+                                                                if (window.confirm("לסיים משמרת?")) {
+                                                                    const nowStr = dayjs().format("HH:mm");
+                                                                    setEndedLocalIds(prev => [...prev, item.id]);
+                                                                    setRecentShifts(prev => prev.map(s =>
+                                                                        s.id === item.id ? { ...s, endTime: nowStr, isEnded: true } : s
+                                                                    ));
+                                                                    await api.post(`/shifts/${item.id}/end`);
+                                                                    refreshSummary();
+                                                                    refreshUser();
+                                                                }
+                                                            }}
+                                                            className="w-full px-4 py-2.5 text-xs font-medium text-emerald-600 hover:bg-emerald-50 text-right flex items-center justify-end gap-2"
+                                                        >
+                                                            סיים משמרת
+                                                            <Clock className="w-3 h-3" />
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setActiveMenuId(null);
+                                                            handleOpenTip(item.id, item.tip);
+                                                        }}
+                                                        className="w-full px-4 py-2.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 text-right flex items-center justify-end gap-2"
+                                                    >
+                                                        {item.tip > 0 ? 'ערוך טיפ' : 'הוסף טיפ'}
+                                                        <Wallet className="w-3 h-3" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleEditShift(item);
+                                                        }}
+                                                        className="w-full px-4 py-2.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 text-right flex items-center justify-end gap-2"
+                                                    >
+                                                        עריכה
+                                                        <Pencil className="w-3 h-3" />
+                                                    </button>
+                                                    <button
+                                                        onClick={async (e) => {
+                                                            e.stopPropagation();
+                                                            setActiveMenuId(null);
+                                                            if (window.confirm("למחוק משמרת?")) {
+                                                                await api.delete(`/shifts/${item.id}`);
+                                                                refreshSummary();
+                                                                refreshUser();
+                                                            }
+                                                        }}
+                                                        className="w-full px-4 py-2.5 text-xs font-medium text-red-600 hover:bg-red-50 text-right flex items-center justify-end gap-2"
+                                                    >
+                                                        מחיקה
+                                                        <Trash2 className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                    {recentShifts.length === 0 && (
+                        <div className="text-center py-12 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
+                            <p className="text-sm text-zinc-400">אין משמרות לאחרונה</p>
+                        </div>
+                    )}
+                </div>
+            </section>
+
+            {/* FAB */}
+            <button
+                onClick={() => setIsAddOpen(true)}
+                className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-zinc-900 text-white p-4 rounded-full shadow-lg active:scale-95 transition-transform z-40"
+            >
+                <Plus className="w-6 h-6" />
+            </button>
+
+            {/* Add Shift Modal */}
+            {isAddOpen && (
+                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-end justify-center z-50">
+                    <div className="bg-white rounded-t-2xl w-full max-w-md px-5 pt-5 pb-8 max-h-[90vh] overflow-y-auto" dir="rtl">
+                        <div className="flex items-center justify-between mb-5">
+                            <h2 className="text-lg font-medium text-zinc-900">
+                                {editShiftId ? 'עריכת משמרת' : 'משמרת חדשה'}
+                            </h2>
+                            <button onClick={closeAddModal} className="p-2 -ml-2 rounded-lg text-zinc-400 hover:text-zinc-600 active:bg-zinc-100">
+                                <X className="w-5 h-5" />
                             </button>
-                        </article>
-                    ); // End of return
-                })}
-                {recentShifts.length === 0 && (<p className="text-xs text-slate-400 text-center">
-                    עדיין אין משמרות שמורות. {!user ? 'התחבר כדי להתחיל לעקוב.' : ''}
-                </p>)}
-            </div>
-        </section>
+                        </div>
 
-        {/* Floating Action Button */}
-        <button
-            onClick={() => setIsAddOpen(true)}
-            className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-gradient-to-r from-violet-600 to-purple-600 text-white px-8 py-4 rounded-2xl shadow-xl shadow-violet-500/30 flex items-center gap-3 font-semibold z-40 hover:from-violet-700 hover:to-purple-700 transition-all"
-        >
-            <Plus className="w-5 h-5"/>
-            הוסף משמרת
-        </button>
+                        {/* Date */}
+                        <div className="mb-4">
+                            <DatePicker
+                                selected={selectedDate ? new Date(selectedDate) : null}
+                                onChange={(date) => {
+                                    if (date) {
+                                        const offsetDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+                                        setSelectedDate(offsetDate.toISOString().slice(0, 10));
+                                    }
+                                }}
+                                dateFormat="dd-MM-yyyy"
+                                wrapperClassName="w-full"
+                                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-3 text-center text-sm font-medium text-zinc-700 focus:outline-none active:bg-zinc-100"
+                            />
+                        </div>
 
-        {/* Add Shift Modal */}
-        {isAddOpen && (
-            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-end justify-center z-50">
-                <div className="bg-white rounded-t-3xl max-w-md w-full px-6 pt-6 pb-8 max-h-[90vh] overflow-y-auto">
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-bold text-slate-900">
-                            הוספת משמרת חדשה
-                        </h2>
-                        <button
-                            onClick={() => setIsAddOpen(false)}
-                            className="text-slate-400 hover:text-slate-600 transition-colors"
-                        >
-                            <X className="w-5 h-5"/>
-                        </button>
-                    </div>
-
-                    {/* Date Input */}
-                    <div className="mb-6">
-                        <label className="block text-sm font-medium text-slate-600 mb-2 text-right">
-                            תאריך
-                        </label>
-                        <input
-                            type="date"
-                            value={selectedDate}
-                            onChange={(e) => setSelectedDate(e.target.value)}
-                            className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-left focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition-all"
-                        />
-                        <p className="text-xs text-slate-400 mt-2 text-right">
-                            {formatDateForDisplay(selectedDate)}
-                        </p>
-                    </div>
-
-                    {/* Shift Type Selector */}
-                    <div className="mb-6">
-                        <p className="text-sm font-medium text-slate-600 mb-3 text-right">
-                            בחר סוג משמרת
-                        </p>
-
-                        {shiftTypes.length > 0 ? (<div className="grid grid-cols-2 gap-4">
+                        {/* Shift Types */}
+                        <div className="grid grid-cols-2 gap-3 mb-5">
                             {shiftTypes.map((shift) => {
-                                const config = shiftConfig[shift.code?.toLowerCase()] || {
-                                    icon: Clock, gradient: 'from-slate-400 to-slate-500',
-                                };
-
+                                const config = shiftConfig[shift.code?.toLowerCase()] || shiftConfig.middle;
                                 const Icon = config.icon;
                                 const isSelected = selectedShiftCode === shift.code;
 
-                                return (<button
-                                    key={shift.code}
-                                    type="button"
-                                    onClick={() => handleShiftSelect(shift)}
-                                    className={`relative flex flex-col items-center justify-center rounded-2xl p-5 border-2 transition-all duration-300 ${isSelected ? `bg-gradient-to-br ${config.gradient} text-white border-transparent shadow-lg scale-[1.02]` : 'bg-white text-slate-700 border-slate-100 hover:border-slate-200 shadow-sm'}`}
-                                >
-                                    <div
-                                        className={`mb-3 p-2.5 rounded-full ${isSelected ? 'bg-white/20' : 'bg-slate-50'}`}>
-                                        <Icon
-                                            className={`w-6 h-6 ${isSelected ? 'text-white' : 'text-slate-400'}`}/>
-                                    </div>
-                                    <div className="font-bold text-sm whitespace-nowrap">
-                                        {shift.nameHe}
-                                    </div>
-                                </button>);
+                                return (
+                                    <button
+                                        key={shift.code}
+                                        onClick={() => handleShiftSelect(shift)}
+                                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all active:scale-95 ${
+                                            isSelected
+                                                ? `bg-gradient-to-br ${config.gradient} border-transparent text-white shadow-lg`
+                                                : 'border-zinc-200 bg-white text-zinc-600 active:bg-zinc-50'
+                                        }`}
+                                    >
+                                        <div className={`p-2 rounded-full ${isSelected ? 'bg-white/20' : config.bg}`}>
+                                            <Icon className={`w-6 h-6 ${isSelected ? 'text-white' : config.color}`} />
+                                        </div>
+                                        <span className="text-sm font-semibold">{shift.nameHe}</span>
+                                    </button>
+                                );
                             })}
-                        </div>) : (<div className="text-center py-8">
-                            <p className="text-slate-400 text-sm">טוען סוגי משמרות...</p>
-                        </div>)}
-                    </div>
-
-                    {/* Time Inputs */}
-                    <p className="text-sm font-medium text-slate-600 mb-3 text-right">משמרת מותאמת אישית</p>
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div>
-                            <label className="text-sm font-medium text-slate-600 block mb-2 text-right">שעת
-                                התחלה</label>
-                            <input
-                                type="time"
-                                value={startTime}
-                                onChange={(e) => setStartTime(e.target.value)}
-                                className="w-full text-center text-lg h-12 rounded-xl border border-slate-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition-all"
-                            />
                         </div>
-                        <div>
-                            <label className="text-sm font-medium text-slate-600 block mb-2 text-right">שעת
-                                סיום</label>
-                            <input
-                                type="time"
-                                value={endTime}
-                                onChange={(e) => setEndTime(e.target.value)}
-                                className="w-full text-center text-lg h-12 rounded-xl border border-slate-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition-all"
-                            />
+
+                        {/* Times */}
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="flex-1">
+                                <label className="text-xs text-zinc-500 mb-1.5 block text-center">התחלה</label>
+                                <input
+                                    type="time"
+                                    value={startTime}
+                                    onChange={(e) => setStartTime(e.target.value)}
+                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-3 text-center text-base font-medium text-zinc-900 focus:outline-none active:bg-zinc-100"
+                                    dir="ltr"
+                                    step="60"
+                                />
+                            </div>
+                            <div className="text-zinc-300 pt-5">-</div>
+                            <div className="flex-1">
+                                <label className="text-xs text-zinc-500 mb-1.5 block text-center">סיום</label>
+                                <input
+                                    type="time"
+                                    value={endTime}
+                                    onChange={(e) => setEndTime(e.target.value)}
+                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-3 text-center text-base font-medium text-zinc-900 focus:outline-none active:bg-zinc-100"
+                                    dir="ltr"
+                                    step="60"
+                                />
+                            </div>
                         </div>
-                    </div>
 
-                    {/* Overtime Section */}
-                    {!isOvertimeOpen && (<button
-                        type="button"
-                        onClick={() => setIsOvertimeOpen(true)}
-                        className="w-full mb-6 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/50 text-slate-600 py-3 text-sm font-medium hover:border-violet-400 hover:bg-violet-50/50 hover:text-violet-700 transition-all"
-                    >
-                        + הוסף שעות נוספות
-                    </button>)}
-
-                    {isOvertimeOpen && (<div
-                        className="mb-6 p-4 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200">
-                        <div className="flex items-center justify-between mb-3">
-                            <p className="text-sm font-medium text-amber-900 text-right">שעות נוספות</p>
+                        {/* Overtime */}
+                        {!isOvertimeOpen ? (
                             <button
-                                type="button"
-                                onClick={() => {
-                                    setIsOvertimeOpen(false);
-                                    setOvertimeHours('');
-                                    setOvertimeRate('');
-                                }}
-                                className="text-xs text-amber-600 hover:text-amber-800 font-medium"
+                                onClick={() => setIsOvertimeOpen(true)}
+                                className="w-full mb-4 py-2.5 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 text-zinc-600 text-xs font-medium"
                             >
-                                הסר
+                                שעות נוספות +
                             </button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="flex flex-col">
-                          <span className="text-xs font-medium text-amber-800 mb-2 text-right">
-                            שעות נוספות
-                          </span>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="0.25"
-                                    value={overtimeHours}
-                                    onChange={(e) => setOvertimeHours(e.target.value)}
-                                    className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm text-left focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 outline-none"
-                                    placeholder="0"
-                                />
+                        ) : (
+                            <div className="mb-4 p-3 rounded-xl bg-zinc-50 border border-dashed border-zinc-300">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs font-medium text-zinc-900">שעות נוספות</span>
+                                    <button
+                                        onClick={() => {
+                                            setIsOvertimeOpen(false);
+                                            setOvertimeHours('');
+                                            setOvertimeRate('');
+                                        }}
+                                        className="text-xs text-zinc-700"
+                                    >
+                                        הסר
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label className="text-[10px] text-zinc-800 mb-1 block text-center">שעות</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.25"
+                                            value={overtimeHours}
+                                            onChange={(e) => setOvertimeHours(e.target.value)}
+                                            className="w-full bg-white border border-zinc-200 rounded-lg py-2 px-3 text-sm text-center focus:outline-none"
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-zinc-800 mb-1 block text-center">תעריף (₪)</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="1"
+                                            value={overtimeRate || overtimeRateFromSettings}
+                                            onChange={(e) => setOvertimeRate(e.target.value)}
+                                            className="w-full bg-white border border-zinc-200 rounded-lg py-2 px-3 text-sm text-center focus:outline-none"
+                                            placeholder={overtimeRateFromSettings || '0'}
+                                        />
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex flex-col">
-                          <span className="text-xs font-medium text-amber-800 mb-2 text-right">
-                            שכר לשעה (₪)
-                          </span>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="1"
-                                    value={overtimeRate || overtimeRateFromSettings}
-                                    onChange={(e) => setOvertimeRate(e.target.value)}
-                                    className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm text-left focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 outline-none"
-                                    placeholder={overtimeRateFromSettings || '0'}
-                                />
-                            </div>
-                        </div>
-                    </div>)}
+                        )}
 
-                    {/* Submit Button */}
-                    <button
-                        type="button"
-                        onClick={handleCreateShift}
-                        className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white py-4 text-base font-semibold shadow-lg shadow-violet-500/30 disabled:opacity-50 disabled:cursor-not-allowed hover:from-violet-700 hover:to-purple-700 transition-all"
-                        disabled={!selectedShiftCode || !startTime || !endTime}
-                    >
-                        שמור משמרת
-                    </button>
-                </div>
-            </div>)}
-
-        {/* Add Tip Modal */}
-        {isTipOpen && (
-            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-3xl max-w-sm w-full px-6 py-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-bold text-slate-900">
-                            הוסף טיפ
-                        </h2>
                         <button
-                            onClick={() => setIsTipOpen(false)}
-                            className="text-slate-400 hover:text-slate-600 transition-colors"
+                            onClick={handleCreateShift}
+                            disabled={!selectedShiftCode || !startTime || !endTime}
+                            className="w-full bg-zinc-900 text-white py-3.5 rounded-xl font-medium disabled:opacity-50 active:scale-95 transition-transform"
                         >
-                            <X className="w-5 h-5"/>
+                            שמור
                         </button>
                     </div>
-
-                    <div className="mb-6">
-                        <label className="block text-sm font-medium text-slate-600 mb-2 text-right">
-                            סכום הטיפ (₪)
-                        </label>
-                        <input
-                            type="number"
-                            min="0"
-                            step="1"
-                            value={tipAmount}
-                            onChange={(e) => setTipAmount(e.target.value)}
-                            className="w-full rounded-xl border border-slate-200 px-4 py-3 text-lg text-center focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
-                            placeholder="0"
-                            autoFocus
-                        />
-                    </div>
-
-                    <button
-                        type="button"
-                        onClick={handleAddTip}
-                        className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-4 text-base font-semibold shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed hover:from-emerald-600 hover:to-emerald-700 transition-all"
-                        disabled={!tipAmount || Number(tipAmount) <= 0}
-                    >
-                        שמור טיפ
-                    </button>
                 </div>
-            </div>)}
-    </Layout>);
+            )}
+
+            {/* Tip Modal */}
+            {isTipOpen && (
+                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-xs p-5" dir="rtl">
+                        <h3 className="text-lg font-medium text-zinc-900 mb-4 text-center">כמה טיפים?</h3>
+                        <div className="relative mb-4">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 font-medium">₪</span>
+                            <input
+                                type="number"
+                                value={tipAmount}
+                                onChange={(e) => setTipAmount(e.target.value)}
+                                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-4 px-4 text-center text-2xl font-semibold text-zinc-900 focus:outline-none"
+                                placeholder="0"
+                                autoFocus
+                            />
+                        </div>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setIsTipOpen(false)}
+                                className="flex-1 py-3 rounded-xl font-medium text-zinc-600 active:bg-zinc-50"
+                            >
+                                ביטול
+                            </button>
+                            <button
+                                onClick={handleAddTip}
+                                disabled={!tipAmount || Number(tipAmount) <= 0}
+                                className="flex-1 bg-zinc-900 text-white py-3 rounded-xl font-medium disabled:opacity-50 active:scale-95 transition-transform"
+                            >
+                                שמור
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </Layout>
+    );
 }
