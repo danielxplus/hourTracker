@@ -4,6 +4,7 @@ import HomePage from "./pages/HomePage";
 import SettingsPage from "./pages/SettingsPage";
 import HistoryPage from "./pages/HistoryPage";
 import LoginPage from "./pages/LoginPage";
+import ErrorPage from "./pages/ErrorPage";
 import ProtectedRoute from "./context/ProtectedRoute";
 import "./index.css";
 
@@ -37,6 +38,7 @@ function App() {
                   </ProtectedRoute>
                 }
             />
+              <Route path="*" element={<ErrorPage />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

@@ -45,8 +45,8 @@ public class DataInitializer implements CommandLineRunner {
         createIfMissing(
                 "MIDDLE",
                 "משמרת מידל",
-                LocalTime.of(20, 30),
                 LocalTime.of(11, 30),
+                LocalTime.of(20, 30),
                 8.75
         );
     }
