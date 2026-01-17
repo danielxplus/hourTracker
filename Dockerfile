@@ -1,24 +1,24 @@
 # --- Stage 1: Build the Frontend ---
-# FIX 1: Use Node 20 because your logs said react-router needs it
 FROM node:20 AS frontend-builder
 WORKDIR /app/frontend
 
-# Copy frontend source
 COPY frontend/package*.json ./
 COPY frontend/ .
 
-# FIX 2: Set CI=false so warnings (like "Critical dependency") don't crash the build
+# Ignore warnings (CI=false) to ensure the build finishes
 RUN npm install && CI=false npm run build
 
 # --- Stage 2: Build the Backend ---
 FROM eclipse-temurin:17-jdk-alpine AS backend-builder
 WORKDIR /app
 
-# Copy backend source
 COPY . .
 
 # Copy the built frontend
 COPY --from=frontend-builder /app/frontend/build /app/src/main/resources/static
+
+# FIX: Grant execution permission to the Maven Wrapper
+RUN chmod +x mvnw
 
 # Build the JAR
 RUN ./mvnw clean package -DskipTests
