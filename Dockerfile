@@ -18,8 +18,7 @@ COPY . .
 
 # Copy the built frontend into Spring Boot's static folder
 # Adjust the source path (/app/frontend/dist) if your vite build outputs to 'build' instead of 'dist'
-COPY --from=frontend-builder /app/frontend/dist /app/src/main/resources/static
-
+COPY --from=frontend-builder /app/frontend/build /app/src/main/resources/static
 # Build the JAR, skipping tests to save time
 RUN ./mvnw clean package -DskipTests
 
