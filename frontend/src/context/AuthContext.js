@@ -46,7 +46,7 @@ export function AuthProvider({ children }) {
 
   async function logout() {
     try {
-      await api.post("http://localhost:8080/logout");
+      await api.post("/logout");
     } catch {
       // ignore
     }
