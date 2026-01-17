@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Sun, Sunset, Moon, Clock, X, Plus, Wallet, Pencil, Trash2, MoreVertical } from "lucide-react";
+import { Sun, Sunset, Moon, Clock, X, Plus, Wallet, Pencil, Trash2, MoreVertical, AlertTriangle } from "lucide-react";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/client";
@@ -34,6 +34,7 @@ export default function HomePage() {
     const [editShiftId, setEditShiftId] = useState(null);
     const [endedLocalIds, setEndedLocalIds] = useState([]);
     const [activeMenuId, setActiveMenuId] = useState(null);
+    const [deleteShiftId, setDeleteShiftId] = useState(null);
 
     useEffect(() => {
         const handleClickOutside = () => setActiveMenuId(null);
@@ -119,8 +120,24 @@ export default function HomePage() {
 
     const handleShiftSelect = (shift) => {
         setSelectedShiftCode(shift.code);
+        // Only set times if they are empty or if we want to enforce defaults
+        // For now, let's set defaults if provided
         setStartTime(shift.defaultStart);
         setEndTime(shift.defaultEnd);
+    };
+
+    const handleOpenAdd = () => {
+        setIsAddOpen(true);
+        // Default to Middle if available and no selection
+        if (!selectedShiftCode && !editShiftId) {
+            // Find "Middle" or fallback to first
+            const middle = shiftTypes.find(s => s.code.toLowerCase() === 'middle') || shiftTypes[0];
+            if (middle) {
+                setSelectedShiftCode(middle.code);
+                setStartTime(middle.defaultStart);
+                setEndTime(middle.defaultEnd);
+            }
+        }
     };
 
     const handleEditShift = (shift) => {
@@ -128,8 +145,20 @@ export default function HomePage() {
         setSelectedDate(shift.date);
         const t = shiftTypeMap[shift.shiftType];
         if (t) setSelectedShiftCode(t.code);
-        setStartTime(shift.startTime?.slice(0, 5) || "");
-        setEndTime(shift.endTime?.slice(0, 5) || "");
+
+        // Fix time display: handle array [H, M] or string "HH:mm:ss"
+        const formatTime = (val) => {
+            if (Array.isArray(val)) {
+                return `${String(val[0]).padStart(2, '0')}:${String(val[1]).padStart(2, '0')}`;
+            }
+            if (typeof val === 'string') {
+                return val.slice(0, 5);
+            }
+            return "";
+        };
+
+        setStartTime(formatTime(shift.startTime));
+        setEndTime(formatTime(shift.endTime));
         setOvertimeHours(shift.overtimeHours || "");
         setOvertimeRate(shift.overtimeHourlyRate || "");
         setIsOvertimeOpen(!!shift.overtimeHours);
@@ -194,6 +223,18 @@ export default function HomePage() {
         setOvertimeRate("");
         setSelectedDate(new Date().toISOString().slice(0, 10));
     };
+
+    async function handleDeleteShift() {
+        if (!deleteShiftId) return;
+        try {
+            await api.delete(`/shifts/${deleteShiftId}`);
+            refreshSummary();
+            refreshUser();
+            setDeleteShiftId(null);
+        } catch (error) {
+            console.error("Error deleting shift:", error);
+        }
+    }
 
     return (
         <Layout>
@@ -265,9 +306,8 @@ export default function HomePage() {
                         return (
                             <div
                                 key={item.id}
-                                className={`bg-white rounded-xl border p-4 transition-all ${
-                                    ongoing ? 'border-emerald-300 bg-emerald-50/30' : 'border-zinc-200/60'
-                                }`}
+                                className={`bg-white rounded-xl border p-4 transition-all ${ongoing ? 'border-emerald-300 bg-emerald-50/30' : 'border-zinc-200/60'
+                                    }`}
                             >
                                 <div className="flex items-center gap-3">
                                     {/* Icon */}
@@ -363,14 +403,10 @@ export default function HomePage() {
                                                         <Pencil className="w-3 h-3" />
                                                     </button>
                                                     <button
-                                                        onClick={async (e) => {
+                                                        onClick={(e) => {
                                                             e.stopPropagation();
                                                             setActiveMenuId(null);
-                                                            if (window.confirm("למחוק משמרת?")) {
-                                                                await api.delete(`/shifts/${item.id}`);
-                                                                refreshSummary();
-                                                                refreshUser();
-                                                            }
+                                                            setDeleteShiftId(item.id);
                                                         }}
                                                         className="w-full px-4 py-2.5 text-xs font-medium text-red-600 hover:bg-red-50 text-right flex items-center justify-end gap-2"
                                                     >
@@ -395,7 +431,7 @@ export default function HomePage() {
 
             {/* FAB */}
             <button
-                onClick={() => setIsAddOpen(true)}
+                onClick={handleOpenAdd}
                 className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-zinc-900 text-white p-4 rounded-full shadow-lg active:scale-95 transition-transform z-40"
             >
                 <Plus className="w-6 h-6" />
@@ -441,11 +477,10 @@ export default function HomePage() {
                                     <button
                                         key={shift.code}
                                         onClick={() => handleShiftSelect(shift)}
-                                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all active:scale-95 ${
-                                            isSelected
-                                                ? `bg-gradient-to-br ${config.gradient} border-transparent text-white shadow-lg`
-                                                : 'border-zinc-200 bg-white text-zinc-600 active:bg-zinc-50'
-                                        }`}
+                                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all active:scale-95 ${isSelected
+                                            ? `bg-gradient-to-br ${config.gradient} border-transparent text-white shadow-lg`
+                                            : 'border-zinc-200 bg-white text-zinc-600 active:bg-zinc-50'
+                                            }`}
                                     >
                                         <div className={`p-2 rounded-full ${isSelected ? 'bg-white/20' : config.bg}`}>
                                             <Icon className={`w-6 h-6 ${isSelected ? 'text-white' : config.color}`} />
@@ -575,6 +610,38 @@ export default function HomePage() {
                                 className="flex-1 bg-zinc-900 text-white py-3 rounded-xl font-medium disabled:opacity-50 active:scale-95 transition-transform"
                             >
                                 שמור
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deleteShiftId && (
+                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-xs p-6" dir="rtl">
+                        <div className="flex flex-col items-center justify-center text-center mb-6">
+                            <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mb-4">
+                                <AlertTriangle className="w-6 h-6 text-red-500" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-zinc-900 mb-1">מחיקת משמרת</h3>
+                            <p className="text-sm text-zinc-500">
+                                האם את/ה בטוח/ה שברצונך למחוק את המשמרת? לא ניתן לשחזר פעולה זו.
+                            </p>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setDeleteShiftId(null)}
+                                className="flex-1 py-2.5 rounded-xl font-medium text-zinc-700 bg-zinc-50 hover:bg-zinc-100 transition-colors"
+                            >
+                                ביטול
+                            </button>
+                            <button
+                                onClick={handleDeleteShift}
+                                className="flex-1 bg-red-600 text-white py-2.5 rounded-xl font-medium hover:bg-red-700 active:scale-95 transition-all shadow-sm"
+                            >
+                                מחק
                             </button>
                         </div>
                     </div>
