@@ -3,10 +3,10 @@
 ![Project Status](https://img.shields.io/badge/Status-Live-success)
 ![Build](https://img.shields.io/badge/Build-Spring%20Boot%20%26%20React-blue)
 
-HourTracker היא מערכת למעקב אחר משמרות וחישוב משכורת אשר נוצרה בעבור מקום העבודה הקודם שלי - מחלקת הביטחון של מלון ממילא.
+אתר ה-HourTracker משמש כמערכת למעקב אחר משמרות וחישוב משכורת אשר נוצרה בעבור מקום העבודה הקודם שלי - מחלקת הביטחון של מלון ממילא.
 הפרויקט נבנה כפתרון Full Stack, עם דגש על ממשק משתמש נקי וחישוב שכר מדויק בזמן אמת.
 
-🔗 **[לצפייה באתר (Live Demo)]([https://hourtracker.onrender.com](https://hourtracker-nxr7.onrender.com))**
+🔗 **[לצפייה באתר](https://hourtracker-nxr7.onrender.com)**
 
 ---
 
