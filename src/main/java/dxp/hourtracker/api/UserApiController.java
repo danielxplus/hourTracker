@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
@@ -72,7 +73,7 @@ public class UserApiController {
 
     @GetMapping("/summary")
     public Map<String, Object> summary(@AuthenticationPrincipal OAuth2User principal) {
-        try{
+        try {
             Map<String, Object> response = new HashMap<>();
             if (principal == null) {
                 response.put("monthHours", 0);
@@ -123,7 +124,6 @@ public class UserApiController {
                     .mapToDouble(s -> s.getTipAmount() != null ? s.getTipAmount() : 0.0)
                     .sum();
 
-
             List<Map<String, Object>> recent = shiftRepository
                     .findTop5ByUserIdOrderByDateDesc(userId)
                     .stream()
@@ -163,26 +163,39 @@ public class UserApiController {
             return response;
         }
         String userId = principal.getName();
+
+        // Default base logic: 51.0 is the system-wide default
+        Double defaultBase = 51.0;
+
         UserSettings settings = userSettingsRepository
                 .findByUserId(userId)
                 .orElseGet(() -> {
                     UserSettings s = new UserSettings();
                     s.setUserId(userId);
-                    s.setHourlyRate(0.0);
-                    s.setOvertimeHourlyRate(0.0);
+                    s.setHourlyRate(defaultBase);
+                    s.setOvertimeHourlyRate(defaultBase * 1.25);
                     return userSettingsRepository.save(s);
                 });
 
-        response.put("hourlyRate", settings.getHourlyRate() != null ? settings.getHourlyRate() : 0.0);
-        response.put("overtimeHourlyRate", settings.getOvertimeHourlyRate() != null ? settings.getOvertimeHourlyRate() : 0.0);
+        // Also handle case where settings exist but are 0.0 (legacy) - fallback to
+        // default
+        Double currentRate = (settings.getHourlyRate() != null && settings.getHourlyRate() > 0)
+                ? settings.getHourlyRate()
+                : defaultBase;
+
+        Double currentOvertime = (settings.getOvertimeHourlyRate() != null && settings.getOvertimeHourlyRate() > 0)
+                ? settings.getOvertimeHourlyRate()
+                : (currentRate * 1.25);
+
+        response.put("hourlyRate", currentRate);
+        response.put("overtimeHourlyRate", currentOvertime);
         return response;
     }
 
     @PostMapping("/settings")
     public Map<String, Object> updateSettings(
             @AuthenticationPrincipal OAuth2User principal,
-            @RequestBody Map<String, Object> body
-    ) {
+            @RequestBody Map<String, Object> body) {
         Map<String, Object> response = new HashMap<>();
         if (principal == null) {
             response.put("hourlyRate", 0);
@@ -190,7 +203,7 @@ public class UserApiController {
             return response;
         }
         String userId = principal.getName();
-        
+
         Double hourlyRate = null;
         Object value = body.get("hourlyRate");
         if (value instanceof Number number) {
@@ -206,7 +219,7 @@ public class UserApiController {
             overtimeHourlyRate = number.doubleValue();
         }
         if (overtimeHourlyRate == null) {
-            overtimeHourlyRate = 0.0;
+            overtimeHourlyRate = 63.75;
         }
 
         UserSettings settings = userSettingsRepository
@@ -228,8 +241,7 @@ public class UserApiController {
     @PostMapping("/me/display-name")
     public Map<String, Object> updateDisplayName(
             @AuthenticationPrincipal OAuth2User principal,
-            @RequestBody Map<String, Object> body
-    ) {
+            @RequestBody Map<String, Object> body) {
         Map<String, Object> response = new HashMap<>();
         if (principal == null) {
             response.put("displayName", "אורח");
@@ -258,20 +270,28 @@ public class UserApiController {
     }
 
     @GetMapping("/history")
-    public Map<String, Object> history(@AuthenticationPrincipal OAuth2User principal) {
+    public Map<String, Object> history(
+            @AuthenticationPrincipal OAuth2User principal,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month) {
         Map<String, Object> response = new HashMap<>();
         if (principal == null) {
             response.put("items", List.of());
             return response;
         }
         String userId = principal.getName();
-        YearMonth thisMonth = YearMonth.now();
-        LocalDate first = thisMonth.atDay(1);
-        LocalDate last = thisMonth.atEndOfMonth();
 
-        List<Map<String, Object>> items = shiftRepository
-                .findByUserIdAndDateBetweenOrderByDateDesc(userId, first, last)
-                .stream()
+        List<Shift> shifts;
+        if (year != null && month != null) {
+            YearMonth ym = YearMonth.of(year, month);
+            LocalDate start = ym.atDay(1);
+            LocalDate end = ym.atEndOfMonth();
+            shifts = shiftRepository.findByUserIdAndDateBetweenOrderByDateDesc(userId, start, end);
+        } else {
+            shifts = shiftRepository.findAllByUserIdOrderByDateDesc(userId);
+        }
+
+        List<Map<String, Object>> items = shifts.stream()
                 .map(s -> {
                     Map<String, Object> m = new HashMap<>();
                     m.put("id", s.getId());
@@ -290,5 +310,3 @@ public class UserApiController {
         return response;
     }
 }
-
-

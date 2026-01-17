@@ -2,16 +2,14 @@ package dxp.hourtracker.controller;
 
 import dxp.hourtracker.entity.ShiftType;
 import dxp.hourtracker.repository.ShiftTypeRepository;
+import dxp.hourtracker.service.ShiftService;
 import dxp.hourtracker.shift.Shift;
 import dxp.hourtracker.shift.ShiftRepository;
-import dxp.hourtracker.user.UserSettings;
-import dxp.hourtracker.user.UserSettingsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,8 +20,8 @@ import java.util.Map;
 public class ShiftController {
 
     private final ShiftTypeRepository shiftTypeRepository;
+    private final ShiftService shiftService; // Inject Service
     private final ShiftRepository shiftRepository;
-    private final UserSettingsRepository userSettingsRepository;
 
     @GetMapping("/shift-types")
     public List<Map<String, Object>> getShiftTypes() {
@@ -35,75 +33,60 @@ public class ShiftController {
     @PostMapping("/shifts")
     public Map<String, Object> createShift(
             @AuthenticationPrincipal OAuth2User principal,
-            @RequestBody Map<String, Object> body
-    ) {
+            @RequestBody Map<String, Object> body) {
         if (principal == null) {
             throw new IllegalStateException("User must be authenticated to create shifts");
         }
+        // userId is used by service, but variable here only needed if we log or use it
+        // String userId = principal.getName();
+        // Shift saved = shiftService.createShift(principal.getName(), body);
+        Shift saved = shiftService.createShift(principal.getName(), body);
+        return toShiftDto(saved);
+    }
+
+    @PutMapping("/shifts/{id}")
+    public Map<String, Object> updateShift(
+            @AuthenticationPrincipal OAuth2User principal,
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> body) {
+        if (principal == null) {
+            throw new IllegalStateException("User must be authenticated");
+        }
         String userId = principal.getName();
+        Shift updated = shiftService.updateShift(id, userId, body);
+        return toShiftDto(updated);
+    }
 
-        String shiftCode = (String) body.get("shiftCode");
-        String dateRaw = (String) body.get("date");
-
-        if (shiftCode == null || dateRaw == null) {
-            throw new IllegalArgumentException("shiftCode and date are required");
+    @DeleteMapping("/shifts/{id}")
+    public void deleteShift(
+            @AuthenticationPrincipal OAuth2User principal,
+            @PathVariable Long id) {
+        if (principal == null) {
+            throw new IllegalStateException("User must be authenticated");
         }
-
-        LocalDate date = LocalDate.parse(dateRaw);
-
-        ShiftType type = shiftTypeRepository.findByCode(shiftCode)
-                .orElseThrow(() -> new IllegalArgumentException("Unknown shift type: " + shiftCode));
-
-        double hours = type.getDefaultHours() != null ? type.getDefaultHours() : 0.0;
-        double rate = type.getBaseHourlyRate() != null ? type.getBaseHourlyRate() : 0.0;
-        double baseSalary = hours * rate;
-
-        Double overtimeHours = null;
-        Double overtimeHourlyRate = null;
-        Double overtimeSalary = null;
-
-        Object overtimeHoursVal = body.get("overtimeHours");
-        Object overtimeRateVal = body.get("overtimeHourlyRate");
-        if (overtimeHoursVal instanceof Number number) {
-            overtimeHours = number.doubleValue();
+        // Basic ownership check should ideally be in service or here
+        String userId = principal.getName();
+        Shift existing = shiftRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Shift not found"));
+        if (!existing.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("Unauthorized");
         }
-        if (overtimeRateVal instanceof Number number) {
-            overtimeHourlyRate = number.doubleValue();
+        shiftRepository.delete(existing);
+    }
+
+    @PostMapping("/shifts/{id}/end")
+    public Map<String, Object> endShift(
+            @AuthenticationPrincipal OAuth2User principal,
+            @PathVariable Long id) {
+        if (principal == null) {
+            throw new IllegalStateException("User must be authenticated");
         }
+        String userId = principal.getName();
+        Shift ended = shiftService.endShift(id, userId);
+        return toShiftDto(ended);
+    }
 
-        // If overtime hours provided but no rate, use saved rate from settings
-        if (overtimeHours != null && overtimeHours > 0 && overtimeHourlyRate == null) {
-            UserSettings settings = userSettingsRepository.findByUserId(userId).orElse(null);
-            if (settings != null && settings.getOvertimeHourlyRate() != null && settings.getOvertimeHourlyRate() > 0) {
-                overtimeHourlyRate = settings.getOvertimeHourlyRate();
-            }
-        }
-
-        if (overtimeHours != null && overtimeHours > 0 && overtimeHourlyRate != null && overtimeHourlyRate > 0) {
-            overtimeSalary = overtimeHours * overtimeHourlyRate;
-        } else {
-            overtimeHours = 0.0;
-            overtimeHourlyRate = null;
-            overtimeSalary = 0.0;
-        }
-
-        double totalSalary = baseSalary + (overtimeSalary != null ? overtimeSalary : 0.0);
-
-        Shift shift = Shift.builder()
-                .userId(userId)
-                .date(date)
-                .startTime(type.getDefaultStart())
-                .endTime(type.getDefaultEnd())
-                .shiftType(type.getNameHe())
-                .hours(hours + (overtimeHours != null ? overtimeHours : 0.0))
-                .salary(totalSalary)
-                .overtimeHours(overtimeHours)
-                .overtimeHourlyRate(overtimeHourlyRate)
-                .overtimeSalary(overtimeSalary)
-                .build();
-
-        Shift saved = shiftRepository.save(shift);
-
+    private Map<String, Object> toShiftDto(Shift saved) {
         Map<String, Object> response = new HashMap<>();
         response.put("id", saved.getId());
         response.put("date", saved.getDate());
@@ -113,6 +96,9 @@ public class ShiftController {
         response.put("overtimeHours", saved.getOvertimeHours());
         response.put("overtimeSalary", saved.getOvertimeSalary());
         response.put("tipAmount", saved.getTipAmount());
+        // For frontend "active" logic, we might need start/end time
+        response.put("startTime", saved.getStartTime());
+        response.put("endTime", saved.getEndTime());
         return response;
     }
 
@@ -123,22 +109,20 @@ public class ShiftController {
         m.put("defaultStart", type.getDefaultStart());
         m.put("defaultEnd", type.getDefaultEnd());
         m.put("defaultHours", type.getDefaultHours());
-        m.put("baseHourlyRate", type.getBaseHourlyRate());
         return m;
     }
 
     @PostMapping("/shifts/{shiftId}/tip")
     public Map<String, Object> addTipToShift(
-        @AuthenticationPrincipal OAuth2User principal,
-        @PathVariable Long shiftId,
-        @RequestBody Map<String, Object> body
-    ) {
+            @AuthenticationPrincipal OAuth2User principal,
+            @PathVariable Long shiftId,
+            @RequestBody Map<String, Object> body) {
         if (principal == null) {
             throw new IllegalStateException("User must be authenticated to add a tip");
         }
         String userId = principal.getName();
         Shift shift = shiftRepository.findById(shiftId)
-            .orElseThrow(() -> new IllegalArgumentException("Shift not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Shift not found"));
         Object tipValueObj = body.get("tipAmount");
         if (!(tipValueObj instanceof Number)) {
             throw new IllegalArgumentException("tipAmount must be a numeric value");
@@ -153,5 +137,3 @@ public class ShiftController {
         return resp;
     }
 }
-
-

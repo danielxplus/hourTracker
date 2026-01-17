@@ -41,10 +41,6 @@ public class ShiftType {
      */
     private Double defaultHours;
 
-    /**
-     * Base hourly salary for this type, in shekels.
-     */
-    private Double baseHourlyRate;
 }
 
 

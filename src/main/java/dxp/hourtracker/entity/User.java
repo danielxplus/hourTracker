@@ -27,7 +27,7 @@ public class User {
     private String displayName;
 
     private String email;
+
+    // Field 'baseHourlyRate' removed as we now use UserSettings or default constant
+    // (51.0)
 }
-
-
-

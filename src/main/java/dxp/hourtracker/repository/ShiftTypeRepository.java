@@ -8,7 +8,6 @@ import java.util.Optional;
 public interface ShiftTypeRepository extends JpaRepository<ShiftType, Long> {
 
     Optional<ShiftType> findByCode(String code);
+
+    Optional<ShiftType> findByNameHe(String nameHe);
 }
-
-
-
