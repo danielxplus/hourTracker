@@ -84,6 +84,22 @@ export default function HomePage() {
             border: 'border-teal-200',
             gradient: 'from-teal-400 to-emerald-500',
             activeGradient: 'from-teal-500 to-emerald-600'
+        },
+        '4pm_until_12': {
+            icon: Clock,
+            color: 'text-purple-600',
+            bg: 'bg-purple-50',
+            border: 'border-purple-200',
+            gradient: 'from-purple-400 to-violet-500',
+            activeGradient: 'from-purple-500 to-violet-600'
+        },
+        '7am_until_4': {
+            icon: Clock,
+            color: 'text-cyan-600',
+            bg: 'bg-cyan-50',
+            border: 'border-cyan-200',
+            gradient: 'from-cyan-400 to-sky-500',
+            activeGradient: 'from-cyan-500 to-sky-600'
         }
     };
 
@@ -529,28 +545,58 @@ export default function HomePage() {
                         </div>
 
                         {/* Shift Types */}
-                        <div className="grid grid-cols-2 gap-3 mb-5">
-                            {shiftTypes.map((shift) => {
-                                const config = shiftConfig[shift.code?.toLowerCase()] || shiftConfig.middle;
-                                const Icon = config.icon;
-                                const isSelected = selectedShiftCode === shift.code;
+                        <div className="mb-5">
+                            {/* Main 4 shifts in 2x2 grid */}
+                            <div className="grid grid-cols-2 gap-3 mb-3">
+                                {shiftTypes.filter(shift =>
+                                    ['MORNING', 'EVENING', 'NIGHT', 'MIDDLE'].includes(shift.code)
+                                ).map((shift) => {
+                                    const config = shiftConfig[shift.code?.toLowerCase()] || shiftConfig.middle;
+                                    const Icon = config.icon;
+                                    const isSelected = selectedShiftCode === shift.code;
 
-                                return (
-                                    <button
-                                        key={shift.code}
-                                        onClick={() => handleShiftSelect(shift)}
-                                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all active:scale-95 ${isSelected
-                                            ? `bg-gradient-to-br ${config.gradient} border-transparent text-white shadow-lg`
-                                            : 'border-zinc-200 bg-white text-zinc-600 active:bg-zinc-50'
-                                            }`}
-                                    >
-                                        <div className={`p-2 rounded-full ${isSelected ? 'bg-white/20' : config.bg}`}>
-                                            <Icon className={`w-6 h-6 ${isSelected ? 'text-white' : config.color}`} />
-                                        </div>
-                                        <span className="text-sm font-semibold">{shift.nameHe}</span>
-                                    </button>
-                                );
-                            })}
+                                    return (
+                                        <button
+                                            key={shift.code}
+                                            onClick={() => handleShiftSelect(shift)}
+                                            className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all active:scale-95 ${isSelected
+                                                ? `bg-gradient-to-br ${config.gradient} border-transparent text-white shadow-lg`
+                                                : 'border-zinc-200 bg-white text-zinc-600 active:bg-zinc-50'
+                                                }`}
+                                        >
+                                            <div className={`p-2 rounded-full ${isSelected ? 'bg-white/20' : config.bg}`}>
+                                                <Icon className={`w-6 h-6 ${isSelected ? 'text-white' : config.color}`} />
+                                            </div>
+                                            <span className="text-sm font-semibold">{shift.nameHe}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* New 2 shifts as smaller buttons */}
+                            <div className="flex gap-2 justify-center">
+                                {shiftTypes.filter(shift =>
+                                    ['4PM_UNTIL_12', '7AM_UNTIL_4'].includes(shift.code)
+                                ).map((shift) => {
+                                    const config = shiftConfig[shift.code?.toLowerCase()] || shiftConfig.middle;
+                                    const Icon = config.icon;
+                                    const isSelected = selectedShiftCode === shift.code;
+
+                                    return (
+                                        <button
+                                            key={shift.code}
+                                            onClick={() => handleShiftSelect(shift)}
+                                            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border-2 transition-all active:scale-95 ${isSelected
+                                                ? `bg-gradient-to-br ${config.gradient} border-transparent text-white shadow-lg`
+                                                : 'border-zinc-200 bg-white text-zinc-600 active:bg-zinc-50'
+                                                }`}
+                                        >
+                                            <Icon className={`w-4 h-4 ${isSelected ? 'text-white' : config.color}`} />
+                                            <span className="text-xs font-semibold">{shift.nameHe}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
 
                         {/* Times */}
