@@ -367,52 +367,63 @@ export default function HomePage() {
             <section dir="rtl">
                 <h2 className="text-sm font-medium text-zinc-700 mb-3">פעילות אחרונה</h2>
                 <div className="space-y-2">
-                    {recentShifts
-                        .slice() // 1. Create a copy so we don't mutate the original state
-                        .sort((a, b) => {
-                            // 2. Helper to reconstruct the full date-time for comparison
-                            const getShiftDateTime = (shift) => {
-                                const dateStr = Array.isArray(shift.date)
-                                    ? `${shift.date[0]}-${String(shift.date[1]).padStart(2, '0')}-${String(shift.date[2]).padStart(2, '0')}`
-                                    : shift.date;
+                    {(() => {
+                        // 1. Helper: Check if a shift is currently happening
+                        const isActive = (shift) => {
+                            if (shift.isEnded || endedLocalIds.includes(shift.id)) return false;
 
-                                const timeStr = Array.isArray(shift.startTime)
-                                    ? `${String(shift.startTime[0]).padStart(2, '0')}:${String(shift.startTime[1]).padStart(2, '0')}`
-                                    : (shift.startTime?.slice(0, 5) || "00:00");
-
-                                return dayjs(`${dateStr}T${timeStr}`);
-                            };
-
-                            // 3. Sort Descending (Newest B minus Oldest A)
-                            return getShiftDateTime(b).valueOf() - getShiftDateTime(a).valueOf();
-                        })
-                        .map((item) => {
                             const now = dayjs();
-                            let ongoing = false;
+                            // Formatting helpers
+                            const formatTime = (t) => Array.isArray(t) ? `${String(t[0]).padStart(2, '0')}:${String(t[1]).padStart(2, '0')}` : (t?.slice(0, 5) || "");
+                            const formatDate = (d) => Array.isArray(d) ? `${d[0]}-${String(d[1]).padStart(2, '0')}-${String(d[2]).padStart(2, '0')}` : d;
 
-                            if (!item.isEnded && !endedLocalIds.includes(item.id)) {
-                                const formatTime = (t) => Array.isArray(t) ? `${String(t[0]).padStart(2, '0')}:${String(t[1]).padStart(2, '0')}` : (t?.slice(0, 5) || "");
-                                const formatDate = (d) => Array.isArray(d) ? `${d[0]}-${String(d[1]).padStart(2, '0')}-${String(d[2]).padStart(2, '0')}` : d;
+                            const dateStr = formatDate(shift.date);
+                            const sTime = formatTime(shift.startTime) || shiftTypeMap[shift.shiftType]?.defaultStart;
+                            const eTime = formatTime(shift.endTime) || shiftTypeMap[shift.shiftType]?.defaultEnd;
 
-                                const dateStr = formatDate(item.date);
-                                const sTime = formatTime(item.startTime) || shiftTypeMap[item.shiftType]?.defaultStart;
-                                const eTime = formatTime(item.endTime) || shiftTypeMap[item.shiftType]?.defaultEnd;
-
-                                if (dateStr && sTime && eTime) {
-                                    const start = dayjs(`${dateStr}T${sTime}`);
-                                    let end = dayjs(`${dateStr}T${eTime}`);
-                                    if (end.isBefore(start)) end = end.add(1, "day");
-                                    ongoing = now.isAfter(start) && now.add(5, 'minute').isBefore(end);
-                                }
+                            if (dateStr && sTime && eTime) {
+                                const start = dayjs(`${dateStr}T${sTime}`);
+                                let end = dayjs(`${dateStr}T${eTime}`);
+                                if (end.isBefore(start)) end = end.add(1, "day");
+                                return now.isAfter(start) && now.add(5, 'minute').isBefore(end);
                             }
+                            return false;
+                        };
 
+                        // 2. Helper: Get numeric value for time sorting
+                        const getTime = (shift) => {
+                            const dateStr = Array.isArray(shift.date) ? `${shift.date[0]}-${String(shift.date[1]).padStart(2, '0')}-${String(shift.date[2]).padStart(2, '0')}` : shift.date;
+                            const timeStr = Array.isArray(shift.startTime) ? `${String(shift.startTime[0]).padStart(2, '0')}:${String(shift.startTime[1]).padStart(2, '0')}` : (shift.startTime?.slice(0, 5) || "00:00");
+                            return dayjs(`${dateStr}T${timeStr}`).valueOf();
+                        };
+
+                        // 3. Sort & Slice logic
+                        const sorted = recentShifts.slice().sort((a, b) => {
+                            const activeA = isActive(a);
+                            const activeB = isActive(b);
+
+                            // PRIORITY 1: If one is active and the other isn't, the active one wins
+                            if (activeA && !activeB) return -1;
+                            if (!activeA && activeB) return 1;
+
+                            // PRIORITY 2: If status is the same, sort by Newest Date
+                            return getTime(b) - getTime(a);
+                        });
+
+                        // 4. Dynamic Limit: Show 4 if top is active, otherwise 3
+                        const limit = (sorted.length > 0 && isActive(sorted[0])) ? 4 : 3;
+
+                        // 5. Render
+                        return sorted.slice(0, limit).map((item) => {
+                            const ongoing = isActive(item); // Reuse the check for styling
                             const config = shiftConfig[item.shiftType?.toLowerCase()] || shiftConfig.middle;
                             const Icon = config.icon || Clock;
 
                             return (
                                 <div
                                     key={item.id}
-                                    className={`bg-white rounded-xl border p-4 transition-all ${ongoing ? 'border-emerald-300 bg-emerald-50/30' : 'border-zinc-200/60'
+                                    className={`bg-white rounded-xl border p-4 transition-all ${
+                                        ongoing ? 'border-emerald-300 bg-emerald-50/30' : 'border-zinc-200/60'
                                     }`}
                                 >
                                     <div className="flex items-center gap-3">
@@ -438,7 +449,7 @@ export default function HomePage() {
                                             </p>
                                         </div>
 
-                                        {/* Actions */}
+                                        {/* Actions & Salary */}
                                         <div className="flex items-center gap-2 flex-shrink-0">
                                             <div className="text-right">
                                                 <div className="text-base font-semibold text-zinc-900">
@@ -451,7 +462,7 @@ export default function HomePage() {
                                                 )}
                                             </div>
 
-                                            {/* Menu */}
+                                            {/* Menu Button Logic */}
                                             <div className="relative">
                                                 <button
                                                     onClick={(e) => {
@@ -517,7 +528,9 @@ export default function HomePage() {
                                     </div>
                                 </div>
                             );
-                        })}
+                        });
+                    })()}
+
                     {recentShifts.length === 0 && (
                         <div className="text-center py-12 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
                             <p className="text-sm text-zinc-400">אין משמרות לאחרונה</p>
