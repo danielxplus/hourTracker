@@ -364,164 +364,167 @@ export default function HomePage() {
             </section>
 
             {/* Recent Shifts */}
-            {(() => {
-                // Define the "Is Ongoing" check once to use everywhere
-                const isOngoing = (shift) => {
-                    if (shift.isEnded || endedLocalIds.includes(shift.id)) return false;
+            <section dir="rtl">
+                <h2 className="text-sm font-medium text-zinc-700 mb-3">פעילות אחרונה</h2>
+                <div className="space-y-2">
+                    {recentShifts
+                        .slice() // 1. Create a copy so we don't mutate the original state
+                        .sort((a, b) => {
+                            // 2. Helper to reconstruct the full date-time for comparison
+                            const getShiftDateTime = (shift) => {
+                                const dateStr = Array.isArray(shift.date)
+                                    ? `${shift.date[0]}-${String(shift.date[1]).padStart(2, '0')}-${String(shift.date[2]).padStart(2, '0')}`
+                                    : shift.date;
 
-                    const now = dayjs();
-                    const formatTime = (t) => Array.isArray(t) ? `${String(t[0]).padStart(2, '0')}:${String(t[1]).padStart(2, '0')}` : (t?.slice(0, 5) || "");
-                    const formatDate = (d) => Array.isArray(d) ? `${d[0]}-${String(d[1]).padStart(2, '0')}-${String(d[2]).padStart(2, '0')}` : d;
+                                const timeStr = Array.isArray(shift.startTime)
+                                    ? `${String(shift.startTime[0]).padStart(2, '0')}:${String(shift.startTime[1]).padStart(2, '0')}`
+                                    : (shift.startTime?.slice(0, 5) || "00:00");
 
-                    const dateStr = formatDate(shift.date);
-                    const sTime = formatTime(shift.startTime) || shiftTypeMap[shift.shiftType]?.defaultStart;
-                    const eTime = formatTime(shift.endTime) || shiftTypeMap[shift.shiftType]?.defaultEnd;
+                                return dayjs(`${dateStr}T${timeStr}`);
+                            };
 
-                    if (dateStr && sTime && eTime) {
-                        const start = dayjs(`${dateStr}T${sTime}`);
-                        let end = dayjs(`${dateStr}T${eTime}`);
-                        if (end.isBefore(start)) end = end.add(1, "day");
-                        return now.isAfter(start) && now.add(5, 'minute').isBefore(end);
-                    }
-                    return false;
-                };
+                            // 3. Sort Descending (Newest B minus Oldest A)
+                            return getShiftDateTime(b).valueOf() - getShiftDateTime(a).valueOf();
+                        })
+                        .map((item) => {
+                            const now = dayjs();
+                            let ongoing = false;
 
-                // Sort: Ongoing first, then Future -> Past
-                const sortedShifts = recentShifts.slice().sort((a, b) => {
-                    const activeA = isOngoing(a);
-                    const activeB = isOngoing(b);
+                            if (!item.isEnded && !endedLocalIds.includes(item.id)) {
+                                const formatTime = (t) => Array.isArray(t) ? `${String(t[0]).padStart(2, '0')}:${String(t[1]).padStart(2, '0')}` : (t?.slice(0, 5) || "");
+                                const formatDate = (d) => Array.isArray(d) ? `${d[0]}-${String(d[1]).padStart(2, '0')}-${String(d[2]).padStart(2, '0')}` : d;
 
-                    if (activeA && !activeB) return -1; // A moves up
-                    if (!activeA && activeB) return 1;  // B moves up
+                                const dateStr = formatDate(item.date);
+                                const sTime = formatTime(item.startTime) || shiftTypeMap[item.shiftType]?.defaultStart;
+                                const eTime = formatTime(item.endTime) || shiftTypeMap[item.shiftType]?.defaultEnd;
 
-                    // If status is same, sort by date descending
-                    const getVal = (s) => {
-                        const d = Array.isArray(s.date) ? `${s.date[0]}-${s.date[1]}-${s.date[2]}` : s.date;
-                        const t = Array.isArray(s.startTime) ? `${s.startTime[0]}:${s.startTime[1]}` : (s.startTime?.slice(0,5)||'00:00');
-                        return dayjs(`${d}T${t}`).valueOf();
-                    };
-                    return getVal(b) - getVal(a);
-                });
+                                if (dateStr && sTime && eTime) {
+                                    const start = dayjs(`${dateStr}T${sTime}`);
+                                    let end = dayjs(`${dateStr}T${eTime}`);
+                                    if (end.isBefore(start)) end = end.add(1, "day");
+                                    ongoing = now.isAfter(start) && now.add(5, 'minute').isBefore(end);
+                                }
+                            }
 
-                // Dynamic Limit: 4 if top is ongoing, otherwise 3
-                const limit = (sortedShifts.length > 0 && isOngoing(sortedShifts[0])) ? 4 : 3;
+                            const config = shiftConfig[item.shiftType?.toLowerCase()] || shiftConfig.middle;
+                            const Icon = config.icon || Clock;
 
-                // Slice & Map
-                return sortedShifts.slice(0, limit).map((item) => {
-                    const ongoing = isOngoing(item); // Re-use the check for styling
-                    const config = shiftConfig[item.shiftType?.toLowerCase()] || shiftConfig.middle;
-                    const Icon = config.icon || Clock;
-
-                    return (
-                        <div
-                            key={item.id}
-                            className={`bg-white rounded-xl border p-4 transition-all ${ongoing ? 'border-emerald-300 bg-emerald-50/30' : 'border-zinc-200/60'
-                            }`}
-                        >
-                            <div className="flex items-center gap-3">
-                                {/* Icon */}
-                                <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${config.bg} ${config.color} flex-shrink-0`}>
-                                    <Icon className="w-5 h-5" />
-                                </div>
-
-                                {/* Content */}
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-0.5">
-                                        <h3 className="text-sm font-medium text-zinc-900 truncate">
-                                            {item.shiftType || item.name}
-                                        </h3>
-                                        {ongoing && (
-                                            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
-                                        )}
-                                    </div>
-                                    <p className="text-xs text-zinc-500 truncate">
-                                        {new Date(item.date).toLocaleDateString("he-IL", { day: 'numeric', month: 'short' })}
-                                        <span className="mx-1.5">•</span>
-                                        {item.hours.toFixed(1)} שעות
-                                    </p>
-                                </div>
-
-                                {/* Actions */}
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                    <div className="text-right">
-                                        <div className="text-base font-semibold text-zinc-900">
-                                            ₪{item.salary.toFixed(0)}
+                            return (
+                                <div
+                                    key={item.id}
+                                    className={`bg-white rounded-xl border p-4 transition-all ${ongoing ? 'border-emerald-300 bg-emerald-50/30' : 'border-zinc-200/60'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        {/* Icon */}
+                                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${config.bg} ${config.color} flex-shrink-0`}>
+                                            <Icon className="w-5 h-5" />
                                         </div>
-                                        {item.tip > 0 && (
-                                            <div className="text-[10px] text-emerald-600 font-medium">
-                                                +₪{item.tip}
-                                            </div>
-                                        )}
-                                    </div>
 
-                                    {/* Menu */}
-                                    <div className="relative">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setActiveMenuId(activeMenuId === item.id ? null : item.id);
-                                            }}
-                                            className="p-2 -ml-2 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 active:bg-zinc-100 transition-colors"
-                                        >
-                                            <MoreVertical className="w-4 h-4" />
-                                        </button>
-
-                                        {activeMenuId === item.id && (
-                                            <div className="absolute left-0 top-9 w-36 bg-white rounded-xl shadow-xl border border-zinc-200/60 overflow-hidden z-20">
+                                        {/* Content */}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-0.5">
+                                                <h3 className="text-sm font-medium text-zinc-900 truncate">
+                                                    {item.shiftType || item.name}
+                                                </h3>
                                                 {ongoing && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setActiveMenuId(null);
-                                                            setEndShiftId(item.id);
-                                                        }}
-                                                        className="w-full px-4 py-2.5 text-xs font-medium text-emerald-600 hover:bg-emerald-50 text-right flex items-center justify-end gap-2"
-                                                    >
-                                                        סיים משמרת
-                                                        <Clock className="w-3 h-3" />
-                                                    </button>
+                                                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
                                                 )}
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setActiveMenuId(null);
-                                                        handleOpenTip(item.id, item.tip);
-                                                    }}
-                                                    className="w-full px-4 py-2.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 text-right flex items-center justify-end gap-2"
-                                                >
-                                                    {item.tip > 0 ? 'ערוך טיפ' : 'הוסף טיפ'}
-                                                    <Wallet className="w-3 h-3" />
-                                                </button>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleEditShift(item);
-                                                    }}
-                                                    className="w-full px-4 py-2.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 text-right flex items-center justify-end gap-2"
-                                                >
-                                                    עריכה
-                                                    <Pencil className="w-3 h-3" />
-                                                </button>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setActiveMenuId(null);
-                                                        setDeleteShiftId(item.id);
-                                                    }}
-                                                    className="w-full px-4 py-2.5 text-xs font-medium text-red-600 hover:bg-red-50 text-right flex items-center justify-end gap-2"
-                                                >
-                                                    מחיקה
-                                                    <Trash2 className="w-3 h-3" />
-                                                </button>
                                             </div>
-                                        )}
+                                            <p className="text-xs text-zinc-500 truncate">
+                                                {new Date(item.date).toLocaleDateString("he-IL", { day: 'numeric', month: 'short' })}
+                                                <span className="mx-1.5">•</span>
+                                                {item.hours.toFixed(1)} שעות
+                                            </p>
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                            <div className="text-right">
+                                                <div className="text-base font-semibold text-zinc-900">
+                                                    ₪{item.salary.toFixed(0)}
+                                                </div>
+                                                {item.tip > 0 && (
+                                                    <div className="text-[10px] text-emerald-600 font-medium">
+                                                        +₪{item.tip}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Menu */}
+                                            <div className="relative">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setActiveMenuId(activeMenuId === item.id ? null : item.id);
+                                                    }}
+                                                    className="p-2 -ml-2 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 active:bg-zinc-100 transition-colors"
+                                                >
+                                                    <MoreVertical className="w-4 h-4" />
+                                                </button>
+
+                                                {activeMenuId === item.id && (
+                                                    <div className="absolute left-0 top-9 w-36 bg-white rounded-xl shadow-xl border border-zinc-200/60 overflow-hidden z-20">
+                                                        {ongoing && (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setActiveMenuId(null);
+                                                                    setEndShiftId(item.id);
+                                                                }}
+                                                                className="w-full px-4 py-2.5 text-xs font-medium text-emerald-600 hover:bg-emerald-50 text-right flex items-center justify-end gap-2"
+                                                            >
+                                                                סיים משמרת
+                                                                <Clock className="w-3 h-3" />
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setActiveMenuId(null);
+                                                                handleOpenTip(item.id, item.tip);
+                                                            }}
+                                                            className="w-full px-4 py-2.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 text-right flex items-center justify-end gap-2"
+                                                        >
+                                                            {item.tip > 0 ? 'ערוך טיפ' : 'הוסף טיפ'}
+                                                            <Wallet className="w-3 h-3" />
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleEditShift(item);
+                                                            }}
+                                                            className="w-full px-4 py-2.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 text-right flex items-center justify-end gap-2"
+                                                        >
+                                                            עריכה
+                                                            <Pencil className="w-3 h-3" />
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setActiveMenuId(null);
+                                                                setDeleteShiftId(item.id);
+                                                            }}
+                                                            className="w-full px-4 py-2.5 text-xs font-medium text-red-600 hover:bg-red-50 text-right flex items-center justify-end gap-2"
+                                                        >
+                                                            מחיקה
+                                                            <Trash2 className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            );
+                        })}
+                    {recentShifts.length === 0 && (
+                        <div className="text-center py-12 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
+                            <p className="text-sm text-zinc-400">אין משמרות לאחרונה</p>
                         </div>
-                    );
-                });
-            })()}
+                    )}
+                </div>
+            </section>
 
             {/* FAB */}
             <button
