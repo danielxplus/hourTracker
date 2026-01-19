@@ -137,6 +137,9 @@ public class UserApiController {
                         m.put("hours", s.getHours());
                         m.put("overtimeHours", s.getOvertimeHours());
                         m.put("overtimeSalary", s.getOvertimeSalary());
+                        m.put("salary", s.getSalary());
+                        m.put("tipAmount", s.getTipAmount());
+
                         return m;
                     })
                     .toList();

@@ -205,7 +205,7 @@ export default function HistoryPage() {
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                     <div className="text-right">
                                         <div className="text-base font-semibold text-zinc-900">
-                                            ₪{item.salary.toFixed(0)}
+                                            ₪₪{(item.salary || 0).toFixed(0)}
                                         </div>
                                         {item.tipAmount > 0 && (
                                             <div className="text-[10px] text-emerald-600 font-medium">
