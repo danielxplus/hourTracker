@@ -36,5 +36,5 @@ public class UserSettings {
             nullable = false,
             columnDefinition = "boolean default false" // <--- ADD THIS LINE
     )
-    private Boolean isPremium = false;
+    private Boolean isPremium = true;
 }

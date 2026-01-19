@@ -117,10 +117,61 @@ export default function HomePage() {
                 api.get("/history"),
                 api.get("/settings")
             ]);
+
             setSummary(summaryRes.data);
-            if (historyRes.data.items) {
-                setRecentShifts(historyRes.data.items.slice(0, 3));
+
+            // Get a pool of shifts (Summary prefers recentShifts, fallback to History)
+            let shiftsPool = [];
+            if (summaryRes.data.recentShifts && summaryRes.data.recentShifts.length > 0) {
+                shiftsPool = summaryRes.data.recentShifts;
+            } else if (historyRes.data.items) {
+                // Fetch more (e.g. 10) to catch the active one if it's buried
+                shiftsPool = historyRes.data.items.slice(0, 10);
             }
+
+            // SORT: Force ongoing shifts to the top
+            const now = dayjs();
+
+            const sorted = [...shiftsPool].sort((a, b) => {
+                // Helper to check if a shift is ongoing
+                const isOngoing = (shift) => {
+                    // Check if manually ended locally
+                    if (endedLocalIds.includes(shift.id)) return false;
+
+                    // Backend flag check (if backend sends 'isEnded' or similar)
+                    if (shift.isEnded) return false;
+
+                    // Date/Time calculation check
+                    const dateStr = shift.date;
+                    const sTime = shift.startTime?.slice(0, 5);
+                    const eTime = shift.endTime?.slice(0, 5);
+
+                    if (dateStr && sTime && eTime) {
+                        const start = dayjs(`${dateStr}T${sTime}`);
+                        let end = dayjs(`${dateStr}T${eTime}`);
+                        if (end.isBefore(start)) end = end.add(1, "day");
+
+                        // It is ongoing if NOW is between start and end (with buffer)
+                        return now.isAfter(start) && now.add(5, 'minute').isBefore(end);
+                    }
+                    return false;
+                };
+
+                const aActive = isOngoing(a);
+                const bActive = isOngoing(b);
+
+                // If A is active and B is not, A comes first (-1)
+                if (aActive && !bActive) return -1;
+                // If B is active and A is not, B comes first (1)
+                if (!aActive && bActive) return 1;
+
+                // Otherwise, keep original order (usually date desc)
+                return 0;
+            });
+
+            // 3. Slice to final display count (e.g., 3 or 5) AFTER sorting
+            setRecentShifts(sorted.slice(0, 5));
+
             if (settingsRes.data.overtimeHourlyRate) {
                 setOvertimeRateFromSettings(settingsRes.data.overtimeHourlyRate);
             }
@@ -365,7 +416,7 @@ export default function HomePage() {
 
             {/* Recent Shifts */}
             <section dir="rtl">
-                <h2 className="text-sm font-medium text-zinc-700 mb-3">פעילות אחרונה</h2>
+                <h2 className="text-sm font-medium text-zinc-700 mb-3">משמרות אחרונות</h2>
                 <div className="space-y-2">
                     {(() => {
                         // 1. Helper: Check if a shift is currently happening
