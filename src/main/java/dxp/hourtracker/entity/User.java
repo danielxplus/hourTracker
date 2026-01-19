@@ -28,6 +28,8 @@ public class User {
 
     private String email;
 
-    // Field 'baseHourlyRate' removed as we now use UserSettings or default constant
-    // (51.0)
+    /**
+     * flag for premium users
+     */
+    private Boolean isPremium = false;
 }

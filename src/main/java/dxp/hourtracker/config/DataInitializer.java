@@ -25,7 +25,7 @@ public class DataInitializer implements CommandLineRunner {
 
                 // Evening: 14:30 - 23:15 (8.75h) -> 8h Pay (45m deduction)
                 createIfMissing("EVENING", "משמרת ערב",
-                        LocalTime.of(14, 30), LocalTime.of(23, 15), 8.0, 45);
+                        LocalTime.of(14, 30), LocalTime.of(23, 15), 8.0, 30);
 
                 // Night: 22:30 - 07:15 (8.75h) -> 8.45 Pay (Assuming full pay/custom logic)
                 // Note: 8h 45m is 8.75. If you want exactly 8.45, set deduction to 18.
