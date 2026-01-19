@@ -23,7 +23,7 @@ public class DataInitializer implements CommandLineRunner {
                 createIfMissing("MORNING", "משמרת בוקר",
                         LocalTime.of(6, 30), LocalTime.of(15, 30), 8.0, 60);
 
-                // Evening: 14:30 - 23:15 (8.75h) -> 8h Pay (45m deduction)
+                // Evening: 14:30 - 23:15 (8h 45m) -> 8h 15m Pay (30m deduction)
                 createIfMissing("EVENING", "משמרת ערב",
                         LocalTime.of(14, 30), LocalTime.of(23, 15), 8.0, 30);
 

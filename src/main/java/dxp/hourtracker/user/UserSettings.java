@@ -30,5 +30,6 @@ public class UserSettings {
     /**
      * flag for premium users
      */
+    @Column(columnDefinition = "bit(1) default b'0'")
     private Boolean isPremium = false;
 }
