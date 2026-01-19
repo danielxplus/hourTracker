@@ -26,4 +26,9 @@ public class UserSettings {
     private Double overtimeHourlyRate;
 
     private Double shabatHourlyRate;
+
+    /**
+     * flag for premium users
+     */
+    private Boolean isPremium = false;
 }

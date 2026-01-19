@@ -28,8 +28,4 @@ public class User {
 
     private String email;
 
-    /**
-     * flag for premium users
-     */
-    private Boolean isPremium = false;
 }
