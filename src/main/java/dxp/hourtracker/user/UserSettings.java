@@ -31,6 +31,10 @@ public class UserSettings {
      * flag for premium users
      */
     @Builder.Default
-    @Column(name = "is_premium", nullable = false)
+    @Column(
+            name = "is_premium",
+            nullable = false,
+            columnDefinition = "boolean default false" // <--- ADD THIS LINE
+    )
     private Boolean isPremium = false;
 }
