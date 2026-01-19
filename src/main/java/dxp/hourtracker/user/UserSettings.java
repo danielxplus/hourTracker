@@ -30,6 +30,7 @@ public class UserSettings {
     /**
      * flag for premium users
      */
-    @Column(columnDefinition = "bit(1) default b'0'")
+    @Builder.Default
+    @Column(name = "is_premium", nullable = false)
     private Boolean isPremium = false;
 }
