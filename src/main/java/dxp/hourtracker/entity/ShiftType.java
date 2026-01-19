@@ -41,6 +41,9 @@ public class ShiftType {
      */
     private Double defaultHours;
 
+    @Column(name = "unpaid_break_minutes")
+    private Integer unpaidBreakMinutes;
+
 }
 
 

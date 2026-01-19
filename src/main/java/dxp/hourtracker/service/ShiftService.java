@@ -115,18 +115,25 @@ public class ShiftService {
             endDt = endDt.plusDays(1);
         }
 
-        // 2. Calculate Total Hours (Decimal)
-        double durationMinutes = Duration.between(startDt, endDt).toMinutes();
-        double hours = durationMinutes / 60.0;
+        // 2. Calculate Gross Duration
+        long grossMinutes = Duration.between(startDt, endDt).toMinutes();
 
-        // 3. Get User Rate
+        // 3. Get Deduction (Break)
+        int deductionMinutes = (type.getUnpaidBreakMinutes() != null) ? type.getUnpaidBreakMinutes() : 0;
+
+        // 4. Calculate Net Hours (Gross - Break)
+        // Math.max ensures we don't get negative numbers if a shift is shorter than the break
+        double netMinutes = Math.max(0, grossMinutes - deductionMinutes);
+        double hours = netMinutes / 60.0;
+
+        // 5. Get User Rate
         UserSettings settings = userSettingsRepository.findByUserId(userId).orElse(null);
         double rate = (settings != null && settings.getHourlyRate() != null) ? settings.getHourlyRate() : 51.0;
 
-        // 4. Calculate Base Salary (Using WageCalculator for Shabbat Logic)
+        // 6. Calculate Base Salary (Using WageCalculator for Shabbat Logic)
         double baseSalary = wageCalculator.calculateShiftSalary(startDt, endDt, rate);
 
-        // 5. Handle Manual Overtime (Added on top)
+        // 7. Handle Manual Overtime (Added on top)
         Double overtimeHours = null;
         Double overtimeHourlyRate = null;
         Double overtimeSalary = 0.0;
@@ -148,7 +155,7 @@ public class ShiftService {
 
         double totalSalary = baseSalary + overtimeSalary;
 
-        // 6. Handle Tips
+        // 8. Handle Tips
         double tipAmount = 0.0;
         if (payload.containsKey("tipAmount") && payload.get("tipAmount") instanceof Number n) {
             tipAmount = n.doubleValue();
@@ -157,7 +164,7 @@ public class ShiftService {
             tipAmount = shiftRepository.findById(existingId).map(Shift::getTipAmount).orElse(0.0);
         }
 
-        // 7. Save
+        // 9. Save
         return shiftRepository.save(Shift.builder()
                 .id(existingId)
                 .userId(userId)
