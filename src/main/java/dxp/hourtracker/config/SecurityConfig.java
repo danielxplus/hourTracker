@@ -62,7 +62,8 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:3000",
-                "https://hourtracker-nxr7.onrender.com"
+                "https://hourtracker-nxr7.onrender.com",
+                "https://hourtracker-pr-1.onrender.com" // testing
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
