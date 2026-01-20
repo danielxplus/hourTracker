@@ -424,7 +424,6 @@ export default function HomePage() {
                             if (shift.isEnded || endedLocalIds.includes(shift.id)) return false;
 
                             const now = dayjs();
-                            // Formatting helpers
                             const formatTime = (t) => Array.isArray(t) ? `${String(t[0]).padStart(2, '0')}:${String(t[1]).padStart(2, '0')}` : (t?.slice(0, 5) || "");
                             const formatDate = (d) => Array.isArray(d) ? `${d[0]}-${String(d[1]).padStart(2, '0')}-${String(d[2]).padStart(2, '0')}` : d;
 
@@ -436,6 +435,7 @@ export default function HomePage() {
                                 const start = dayjs(`${dateStr}T${sTime}`);
                                 let end = dayjs(`${dateStr}T${eTime}`);
                                 if (end.isBefore(start)) end = end.add(1, "day");
+                                // Add a 5 minute buffer to the "current" check
                                 return now.isAfter(start) && now.add(5, 'minute').isBefore(end);
                             }
                             return false;
@@ -448,25 +448,32 @@ export default function HomePage() {
                             return dayjs(`${dateStr}T${timeStr}`).valueOf();
                         };
 
-                        // 3. Sort & Slice logic
-                        const sorted = recentShifts.slice().sort((a, b) => {
-                            const activeA = isActive(a);
-                            const activeB = isActive(b);
+                        // 3. SEPARATION LOGIC: Explicitly find the active shift, then get 3 history items
 
-                            // PRIORITY 1: If one is active and the other isn't, the active one wins
-                            if (activeA && !activeB) return -1;
-                            if (!activeA && activeB) return 1;
+                        // A. Find the active shift (if any exists in the data)
+                        const activeShift = recentShifts.find(s => isActive(s));
 
-                            // PRIORITY 2: If status is the same, sort by Newest Date
-                            return getTime(b) - getTime(a);
-                        });
+                        // B. Get the history list (exclude the active one, sort by time, take top 3)
+                        const historyShifts = recentShifts
+                            .filter(s => s.id !== activeShift?.id)
+                            .sort((a, b) => getTime(b) - getTime(a)) // Ensure newest is first
+                            .slice(0, 3); // Limit to exactly 3
 
-                        // 4. Dynamic Limit: Show 4 if top is active, otherwise 3
-                        const limit = (sorted.length > 0 && isActive(sorted[0])) ? 4 : 3;
+                        // C. Combine: Active on top, then History
+                        const displayList = activeShift ? [activeShift, ...historyShifts] : historyShifts;
 
-                        // 5. Render
-                        return sorted.slice(0, limit).map((item) => {
-                            const ongoing = isActive(item); // Reuse the check for styling
+
+                        // 4. Render
+                        if (displayList.length === 0) {
+                            return (
+                                <div className="text-center py-12 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
+                                    <p className="text-sm text-zinc-400">אין משמרות לאחרונה</p>
+                                </div>
+                            );
+                        }
+
+                        return displayList.map((item) => {
+                            const ongoing = isActive(item);
                             const config = shiftConfig[item.shiftType?.toLowerCase()] || shiftConfig.middle;
                             const Icon = config.icon || Clock;
 
@@ -504,11 +511,11 @@ export default function HomePage() {
                                         <div className="flex items-center gap-2 flex-shrink-0">
                                             <div className="text-right">
                                                 <div className="text-base font-semibold text-zinc-900">
-                                                    ₪₪{(item.salary || 0).toFixed(0)}
+                                                    ₪{(item.salary || 0).toFixed(0)}
                                                 </div>
-                                                {item.tip > 0 && (
+                                                {item.tipAmount > 0 && (
                                                     <div className="text-[10px] text-emerald-600 font-medium">
-                                                        +₪{item.tip}
+                                                        +₪{item.tipAmount}
                                                     </div>
                                                 )}
                                             </div>
@@ -584,7 +591,7 @@ export default function HomePage() {
 
                     {recentShifts.length === 0 && (
                         <div className="text-center py-12 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
-                            <p className="text-sm text-zinc-400">אין משמרות לאחרונה</p>
+                            <p className="text-sm text-zinc-400">אין משמרות</p>
                         </div>
                     )}
                 </div>
