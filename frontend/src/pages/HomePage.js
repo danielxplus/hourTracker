@@ -421,9 +421,11 @@ export default function HomePage() {
                     {(() => {
                         // 1. Helper: Check if a shift is currently happening
                         const isActive = (shift) => {
+                            // If manually ended in this session, it's not active
                             if (shift.isEnded || endedLocalIds.includes(shift.id)) return false;
 
                             const now = dayjs();
+                            // Helpers to parse arrays or strings from Java
                             const formatTime = (t) => Array.isArray(t) ? `${String(t[0]).padStart(2, '0')}:${String(t[1]).padStart(2, '0')}` : (t?.slice(0, 5) || "");
                             const formatDate = (d) => Array.isArray(d) ? `${d[0]}-${String(d[1]).padStart(2, '0')}-${String(d[2]).padStart(2, '0')}` : d;
 
@@ -435,33 +437,37 @@ export default function HomePage() {
                                 const start = dayjs(`${dateStr}T${sTime}`);
                                 let end = dayjs(`${dateStr}T${eTime}`);
                                 if (end.isBefore(start)) end = end.add(1, "day");
-                                // Add a 5 minute buffer to the "current" check
+
+                                // Active if now is between start and end (with 5 min buffer)
                                 return now.isAfter(start) && now.add(5, 'minute').isBefore(end);
                             }
                             return false;
                         };
 
-                        // 2. Helper: Get numeric value for time sorting
+                        // 2. Helper: Get numeric value for sorting
                         const getTime = (shift) => {
                             const dateStr = Array.isArray(shift.date) ? `${shift.date[0]}-${String(shift.date[1]).padStart(2, '0')}-${String(shift.date[2]).padStart(2, '0')}` : shift.date;
                             const timeStr = Array.isArray(shift.startTime) ? `${String(shift.startTime[0]).padStart(2, '0')}:${String(shift.startTime[1]).padStart(2, '0')}` : (shift.startTime?.slice(0, 5) || "00:00");
                             return dayjs(`${dateStr}T${timeStr}`).valueOf();
                         };
 
-                        // 3. SEPARATION LOGIC: Explicitly find the active shift, then get 3 history items
-
-                        // A. Find the active shift (if any exists in the data)
+                        // 3. STRICT SEPARATION LOGIC
+                        // Find the single active shift
                         const activeShift = recentShifts.find(s => isActive(s));
 
-                        // B. Get the history list (exclude the active one, sort by time, take top 3)
-                        const historyShifts = recentShifts
-                            .filter(s => s.id !== activeShift?.id)
-                            .sort((a, b) => getTime(b) - getTime(a)) // Ensure newest is first
-                            .slice(0, 3); // Limit to exactly 3
+                        // Create history list by filtering out the active shift ID specifically
+                        // We use String() comparison to be safe against number/string mismatches
+                        let historyList = recentShifts.filter(s => {
+                            if (activeShift && String(s.id) === String(activeShift.id)) return false;
+                            return true;
+                        });
 
-                        // C. Combine: Active on top, then History
-                        const displayList = activeShift ? [activeShift, ...historyShifts] : historyShifts;
+                        // Sort history by time (newest first) and take top 3
+                        historyList.sort((a, b) => getTime(b) - getTime(a));
+                        const topHistory = historyList.slice(0, 3);
 
+                        // Combine: If active exists, put it first. Then append the top 3 history items.
+                        const displayList = activeShift ? [activeShift, ...topHistory] : topHistory;
 
                         // 4. Render
                         if (displayList.length === 0) {
@@ -473,7 +479,9 @@ export default function HomePage() {
                         }
 
                         return displayList.map((item) => {
-                            const ongoing = isActive(item);
+                            // Recalculate ongoing status for styling
+                            const ongoing = activeShift && String(item.id) === String(activeShift.id);
+
                             const config = shiftConfig[item.shiftType?.toLowerCase()] || shiftConfig.middle;
                             const Icon = config.icon || Clock;
 
@@ -481,7 +489,7 @@ export default function HomePage() {
                                 <div
                                     key={item.id}
                                     className={`bg-white rounded-xl border p-4 transition-all ${
-                                        ongoing ? 'border-emerald-300 bg-emerald-50/30' : 'border-zinc-200/60'
+                                        ongoing ? 'border-emerald-300 bg-emerald-50/30 shadow-sm relative z-10' : 'border-zinc-200/60'
                                     }`}
                                 >
                                     <div className="flex items-center gap-3">
@@ -497,7 +505,10 @@ export default function HomePage() {
                                                     {item.shiftType || item.name}
                                                 </h3>
                                                 {ongoing && (
-                                                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+                                                    <span className="flex items-center gap-1 bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full text-[10px] font-bold animate-pulse">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                    פעיל
+                                </span>
                                                 )}
                                             </div>
                                             <p className="text-xs text-zinc-500 truncate">
@@ -520,7 +531,7 @@ export default function HomePage() {
                                                 )}
                                             </div>
 
-                                            {/* Menu Button Logic */}
+                                            {/* Menu */}
                                             <div className="relative">
                                                 <button
                                                     onClick={(e) => {
@@ -551,11 +562,11 @@ export default function HomePage() {
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 setActiveMenuId(null);
-                                                                handleOpenTip(item.id, item.tip);
+                                                                handleOpenTip(item.id, item.tipAmount);
                                                             }}
                                                             className="w-full px-4 py-2.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 text-right flex items-center justify-end gap-2"
                                                         >
-                                                            {item.tip > 0 ? 'ערוך טיפ' : 'הוסף טיפ'}
+                                                            {item.tipAmount > 0 ? 'ערוך טיפ' : 'הוסף טיפ'}
                                                             <Wallet className="w-3 h-3" />
                                                         </button>
                                                         <button
