@@ -6,6 +6,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 export default function HistoryPage() {
+    const [overtimeRateFromSettings, setOvertimeRateFromSettings] = useState(0);
     // --- Data States ---
     const [items, setItems] = useState([]);
     const [shiftTypes, setShiftTypes] = useState([]);
@@ -55,6 +56,12 @@ export default function HistoryPage() {
     useEffect(() => {
         loadHistory();
         api.get("/shift-types").then(res => setShiftTypes(res.data)).catch(() => {});
+
+        api.get("/settings").then(res => {
+            if (res.data.overtimeHourlyRate) {
+                setOvertimeRateFromSettings(res.data.overtimeHourlyRate);
+            }
+        }).catch(() => {});
 
         // Close menu on click outside
         const handleClickOutside = () => setActiveMenuId(null);
@@ -348,19 +355,44 @@ export default function HistoryPage() {
                                 + שעות נוספות
                             </button>
                         ) : (
-                            <div className="mb-4 p-3 rounded-xl bg-zinc-50 border border-zinc-200">
+                            <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200">
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs font-medium text-zinc-900">שעות נוספות</span>
-                                    <button onClick={() => { setIsOvertimeOpen(false); setOvertimeHours(''); }} className="text-xs text-zinc-700">הסר</button>
+                                    <span className="text-xs font-medium text-amber-900">שעות נוספות</span>
+                                    <button
+                                        onClick={() => {
+                                            setIsOvertimeOpen(false);
+                                            setOvertimeHours('');
+                                            setOvertimeRate('');
+                                        }}
+                                        className="text-xs text-amber-700"
+                                    >
+                                        הסר
+                                    </button>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label className="text-[10px] text-zinc-500 mb-1 block text-center">שעות</label>
-                                        <input type="number" value={overtimeHours} onChange={(e) => setOvertimeHours(e.target.value)} className="w-full bg-white border border-zinc-200 rounded-lg py-2 px-3 text-sm text-center" placeholder="0" />
+                                        <label className="text-[10px] text-amber-800 mb-1 block text-center">שעות</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.25"
+                                            value={overtimeHours}
+                                            onChange={(e) => setOvertimeHours(e.target.value)}
+                                            className="w-full bg-white border border-amber-200 rounded-lg py-2 px-3 text-sm text-center focus:outline-none"
+                                            placeholder="0"
+                                        />
                                     </div>
                                     <div>
-                                        <label className="text-[10px] text-zinc-500 mb-1 block text-center">תעריף (₪)</label>
-                                        <input type="number" value={overtimeRate} onChange={(e) => setOvertimeRate(e.target.value)} className="w-full bg-white border border-zinc-200 rounded-lg py-2 px-3 text-sm text-center" placeholder="100%" />
+                                        <label className="text-[10px] text-amber-800 mb-1 block text-center">תעריף (₪)</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="1"
+                                            value={overtimeRate || overtimeRateFromSettings}
+                                            onChange={(e) => setOvertimeRate(e.target.value)}
+                                            className="w-full bg-white border border-amber-200 rounded-lg py-2 px-3 text-sm text-center focus:outline-none"
+                                            placeholder={overtimeRateFromSettings || '0'}
+                                        />
                                     </div>
                                 </div>
                             </div>
