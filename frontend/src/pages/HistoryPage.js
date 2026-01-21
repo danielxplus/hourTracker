@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
-import { Sun, Sunset, Moon, Clock, MoreVertical, Wallet, Pencil, Trash2, X } from "lucide-react";
+import { Clock, MoreVertical, Wallet, Pencil, Trash2, X } from "lucide-react";
 import Layout from "../components/Layout";
+import { shiftConfig, getShiftTypeMap } from "../utils/shiftUtils";
 import api from "../api/client";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -32,63 +33,7 @@ export default function HistoryPage() {
     const [tipShiftId, setTipShiftId] = useState(null);
 
     // --- Helpers ---
-    const shiftTypeMap = useMemo(() => {
-        const map = {};
-        shiftTypes.forEach(t => { map[t.nameHe] = t; map[t.code] = t; });
-        return map;
-    }, [shiftTypes]);
-
-    const shiftConfig = {
-        morning: {
-            icon: Sun,
-            color: 'text-amber-600',
-            bg: 'bg-amber-50',
-            border: 'border-amber-200',
-            gradient: 'from-amber-400 to-orange-500',
-            activeGradient: 'from-amber-500 to-orange-600'
-        },
-        evening: {
-            icon: Sunset,
-            color: 'text-orange-600',
-            bg: 'bg-orange-50',
-            border: 'border-orange-200',
-            gradient: 'from-orange-400 to-pink-500',
-            activeGradient: 'from-orange-500 to-pink-600'
-        },
-        night: {
-            icon: Moon,
-            color: 'text-indigo-600',
-            bg: 'bg-indigo-50',
-            border: 'border-indigo-200',
-            gradient: 'from-indigo-500 to-blue-800',
-            activeGradient: 'from-indigo-500 to-purple-600'
-        },
-        middle: {
-            icon: Clock,
-            color: 'text-teal-600',
-            bg: 'bg-teal-50',
-            border: 'border-teal-200',
-            gradient: 'from-teal-400 to-emerald-500',
-            activeGradient: 'from-teal-500 to-emerald-600'
-        },
-
-        '7am_until_4': {
-            icon: Clock,
-            color: 'text-cyan-600',
-            bg: 'bg-cyan-50',
-            border: 'border-cyan-200',
-            gradient: 'from-cyan-400 to-sky-500',
-            activeGradient: 'from-cyan-500 to-sky-600'
-        },
-        '4pm_until_12': {
-            icon: Clock,
-            color: 'text-purple-600',
-            bg: 'bg-purple-50',
-            border: 'border-purple-200',
-            gradient: 'from-purple-400 to-violet-500',
-            activeGradient: 'from-purple-500 to-violet-600'
-        }
-    };
+    const shiftTypeMap = useMemo(() => getShiftTypeMap(shiftTypes), [shiftTypes]);
 
     // --- Load Data ---
     async function loadHistory() {
@@ -137,22 +82,29 @@ export default function HistoryPage() {
 
     const handleSaveShift = async () => {
         if (!selectedShiftCode || !selectedDate) return;
+
+        const finalHours = overtimeHours ? Number(overtimeHours) : 0;
+
+        let finalRate = 0;
+        if (finalHours > 0) {
+            finalRate = overtimeRate ? Number(overtimeRate) : (Number(overtimeRateFromSettings) || 60);
+        }
+
         try {
             const payload = {
                 shiftCode: selectedShiftCode,
                 date: selectedDate,
                 startTime,
                 endTime,
-                overtimeHours: overtimeHours ? Number(overtimeHours) : 0,
-                overtimeHourlyRate: overtimeRate
-                    ? Number(overtimeRate)
-                    : (overtimeHours ? Number(overtimeRateFromSettings) : null),
+                overtimeHours: finalHours,
+                overtimeHourlyRate: finalRate
             };
+
             await api.put(`/shifts/${editShiftId}`, payload);
             closeModals();
             loadHistory();
         } catch (error) {
-            console.error(error); // This helps you see which one failed
+            console.error(error);
             alert("שגיאה בשמירה");
         }
     };
@@ -431,45 +383,51 @@ export default function HistoryPage() {
                                 onClick={() => setIsOvertimeOpen(true)}
                                 className="w-full mb-4 py-2.5 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 text-zinc-600 text-xs font-medium"
                             >
-                                + שעות נוספות
+                                שעות נוספות +
                             </button>
                         ) : (
-                            <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200">
+                            <div className="mb-4 p-3 rounded-xl bg-zinc-50 border border-dashed border-zinc-300">
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs font-medium text-amber-900">שעות נוספות</span>
+                                    <span className="text-xs font-medium text-zinc-900">שעות נוספות</span>
                                     <button
                                         onClick={() => {
                                             setIsOvertimeOpen(false);
                                             setOvertimeHours('');
                                             setOvertimeRate('');
                                         }}
-                                        className="text-xs text-amber-700"
+                                        className="text-xs text-zinc-700"
                                     >
                                         הסר
                                     </button>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label className="text-[10px] text-amber-800 mb-1 block text-center">שעות</label>
+                                        <label className="text-[10px] text-zinc-800 mb-1 block text-center">שעות</label>
                                         <input
                                             type="number"
                                             min="0"
                                             step="0.25"
                                             value={overtimeHours}
                                             onChange={(e) => setOvertimeHours(e.target.value)}
-                                            className="w-full bg-white border border-amber-200 rounded-lg py-2 px-3 text-sm text-center focus:outline-none"
+                                            onKeyDown={(e) => {
+                                                // Prevent 'e', '-', '+'
+                                                if (["e", "E", "-", "+"].includes(e.key)) {
+                                                    e.preventDefault();
+                                                }
+                                            }}
+                                            className="w-full bg-white border border-zinc-200 rounded-lg py-2 px-3 text-sm text-center focus:outline-none"
                                             placeholder="0"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-[10px] text-amber-800 mb-1 block text-center">תעריף (₪)</label>
+                                        <label className="text-[10px] text-zinc-800 mb-1 block text-center">תעריף (₪)</label>
                                         <input
                                             type="number"
                                             min="0"
                                             step="1"
                                             value={overtimeRate || overtimeRateFromSettings}
                                             onChange={(e) => setOvertimeRate(e.target.value)}
-                                            className="w-full bg-white border border-amber-200 rounded-lg py-2 px-3 text-sm text-center focus:outline-none"
+                                            className="w-full bg-white border border-zinc-200 rounded-lg py-2 px-3 text-sm text-center focus:outline-none"
                                             placeholder={overtimeRateFromSettings || '0'}
                                         />
                                     </div>
