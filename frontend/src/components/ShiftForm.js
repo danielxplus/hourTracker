@@ -21,10 +21,15 @@ export default function ShiftForm({
     const handleShiftClick = (shift) => {
         setSelectedShiftCode(shift.code);
 
-        // Auto-fill times from config (Centralized logic!)
+        const apiStart = shift.defaultStart ? shift.defaultStart.slice(0, 5) : "";
+        const apiEnd = shift.defaultEnd ? shift.defaultEnd.slice(0, 5) : "";
+
+        // Fallback to config only if API is empty
         const config = shiftConfig[shift.code?.toLowerCase()] || shiftConfig.middle;
-        if (config.defaultStart) setStartTime(config.defaultStart);
-        if (config.defaultEnd) setEndTime(config.defaultEnd);
+
+        // Set the state
+        setStartTime(apiStart || config.defaultStart || "");
+        setEndTime(apiEnd || config.defaultEnd || "");
     };
 
     return (
