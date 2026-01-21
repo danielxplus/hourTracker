@@ -99,12 +99,17 @@ export default function HistoryPage() {
                 startTime,
                 endTime,
                 overtimeHours: overtimeHours ? Number(overtimeHours) : 0,
-                overtimeHourlyRate: overtimeRate ? Number(overtimeRate) : null,
+                overtimeHourlyRate: overtimeRate
+                    ? Number(overtimeRate)
+                    : (overtimeHours ? Number(overtimeRateFromSettings) : null),
             };
             await api.put(`/shifts/${editShiftId}`, payload);
             closeModals();
             loadHistory();
-        } catch { alert("שגיאה בשמירה"); }
+        } catch (error) {
+            console.error(error); // This helps you see which one failed
+            alert("שגיאה בשמירה");
+        }
     };
 
     const handleDeleteShift = async (id) => {
