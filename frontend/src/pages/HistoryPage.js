@@ -217,7 +217,7 @@ export default function HistoryPage() {
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                     <div className="text-right">
                                         <div className="text-base font-semibold text-zinc-900">
-                                            ₪₪{(item.salary || 0).toFixed(0)}
+                                            ₪{(item.salary || 0).toFixed(0)}
                                         </div>
                                         {item.tipAmount > 0 && (
                                             <div className="text-[10px] text-emerald-600 font-medium">
@@ -302,31 +302,6 @@ export default function HistoryPage() {
                                 wrapperClassName="w-full"
                                 className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-3 text-center text-sm font-medium text-zinc-700 focus:outline-none"
                             />
-                        </div>
-
-                        {/* Shift Types */}
-                        <div className="grid grid-cols-2 gap-3 mb-5">
-                            {shiftTypes.map((shift) => {
-                                const config = shiftConfig[shift.code?.toLowerCase()] || shiftConfig.middle;
-                                const Icon = config.icon;
-                                const isSelected = selectedShiftCode === shift.code;
-                                return (
-                                    <button
-                                        key={shift.code}
-                                        onClick={() => handleShiftSelect(shift)}
-                                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all active:scale-95 ${
-                                            isSelected
-                                                ? 'bg-zinc-800 border-zinc-800 text-white shadow-md'
-                                                : 'border-zinc-200 bg-white text-zinc-600'
-                                        }`}
-                                    >
-                                        <div className={`p-2 rounded-full ${isSelected ? 'bg-white/20' : config.bg}`}>
-                                            <Icon className={`w-6 h-6 ${isSelected ? 'text-white' : config.color}`} />
-                                        </div>
-                                        <span className="text-sm font-semibold">{shift.nameHe}</span>
-                                    </button>
-                                );
-                            })}
                         </div>
 
                         {/* Times */}

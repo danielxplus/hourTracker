@@ -677,7 +677,7 @@ export default function HomePage() {
                             {/* New 2 shifts as smaller buttons */}
                             <div className="flex gap-2 justify-center">
                                 {shiftTypes.filter(shift =>
-                                    ['4PM_UNTIL_12', '7AM_UNTIL_4'].includes(shift.code)
+                                    ['7AM_UNTIL_4', '4PM_UNTIL_12'].includes(shift.code)
                                 ).map((shift) => {
                                     const config = shiftConfig[shift.code?.toLowerCase()] || shiftConfig.middle;
                                     const Icon = config.icon;
