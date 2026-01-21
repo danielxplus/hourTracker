@@ -1,22 +1,27 @@
 import { useEffect, useState, useMemo } from "react";
-import { Sun, Sunset, Moon, Clock, MoreVertical, Wallet, Pencil, Trash2, X } from "lucide-react";
+import { Clock, MoreVertical, Wallet, Pencil, Trash2, X } from "lucide-react";
 import Layout from "../components/Layout";
+import ShiftForm from "../components/ShiftForm"; // 1. Import the component
+import { shiftConfig, getShiftTypeMap } from "../utils/shiftUtils";
 import api from "../api/client";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 export default function HistoryPage() {
+    // Default to 60 or a safe number so we never send 0 if settings fail to load
+    const [overtimeRateFromSettings, setOvertimeRateFromSettings] = useState(60);
+
     // --- Data States ---
     const [items, setItems] = useState([]);
     const [shiftTypes, setShiftTypes] = useState([]);
     const [filter, setFilter] = useState("all");
 
-    // --- UI States (Menu & Modals) ---
+    // --- UI States ---
     const [activeMenuId, setActiveMenuId] = useState(null);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isTipOpen, setIsTipOpen] = useState(false);
 
-    // --- Form States (For Editing) ---
+    // --- Form States ---
     const [editShiftId, setEditShiftId] = useState(null);
     const [selectedShiftCode, setSelectedShiftCode] = useState(null);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
@@ -31,18 +36,7 @@ export default function HistoryPage() {
     const [tipShiftId, setTipShiftId] = useState(null);
 
     // --- Helpers ---
-    const shiftTypeMap = useMemo(() => {
-        const map = {};
-        shiftTypes.forEach(t => { map[t.nameHe] = t; map[t.code] = t; });
-        return map;
-    }, [shiftTypes]);
-
-    const shiftConfig = {
-        morning: { icon: Sun, color: 'text-amber-600', bg: 'bg-amber-50' },
-        evening: { icon: Sunset, color: 'text-orange-600', bg: 'bg-orange-50' },
-        night: { icon: Moon, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-        middle: { icon: Clock, color: 'text-teal-600', bg: 'bg-teal-50' }
-    };
+    const shiftTypeMap = useMemo(() => getShiftTypeMap(shiftTypes), [shiftTypes]);
 
     // --- Load Data ---
     async function loadHistory() {
@@ -55,49 +49,72 @@ export default function HistoryPage() {
     useEffect(() => {
         loadHistory();
         api.get("/shift-types").then(res => setShiftTypes(res.data)).catch(() => {});
+        api.get("/settings").then(res => {
+            if (res.data.overtimeHourlyRate) {
+                setOvertimeRateFromSettings(res.data.overtimeHourlyRate);
+            }
+        }).catch(() => {});
 
-        // Close menu on click outside
         const handleClickOutside = () => setActiveMenuId(null);
         window.addEventListener('click', handleClickOutside);
         return () => window.removeEventListener('click', handleClickOutside);
     }, []);
 
     // --- Handlers ---
-    const handleShiftSelect = (shift) => {
-        setSelectedShiftCode(shift.code);
-        setStartTime(shift.defaultStart);
-        setEndTime(shift.defaultEnd);
-    };
-
     const handleEditShift = (shift) => {
         setEditShiftId(shift.id);
         setSelectedDate(shift.date);
-        const t = shiftTypeMap[shift.shiftType];
+
+        // Match the shift code
+        const t = shiftTypeMap[shift.shiftType] || shiftTypeMap[shift.shiftCode];
         if (t) setSelectedShiftCode(t.code);
+
         setStartTime(shift.startTime?.slice(0, 5) || "");
         setEndTime(shift.endTime?.slice(0, 5) || "");
+
+        // Handle Overtime
         setOvertimeHours(shift.overtimeHours || "");
         setOvertimeRate(shift.overtimeHourlyRate || "");
-        setIsOvertimeOpen(!!shift.overtimeHours);
+        setIsOvertimeOpen(!!shift.overtimeHours && shift.overtimeHours > 0);
+
         setIsEditOpen(true);
         setActiveMenuId(null);
     };
 
     const handleSaveShift = async () => {
-        if (!selectedShiftCode || !selectedDate) return;
+        // 2. CRITICAL FIX: Validate Times!
+        // Sending empty strings "" for time often causes Backend 500 errors
+        if (!selectedShiftCode || !selectedDate || !startTime || !endTime) {
+            alert("נא למלא את כל פרטי המשמרת (תאריך, סוג, ושעות)");
+            return;
+        }
+
+        const finalHours = overtimeHours ? Number(overtimeHours) : 0;
+
+        // 3. Robust Rate Logic (Prevent sending 0 if hours exist)
+        let finalRate = 0;
+        if (finalHours > 0) {
+            finalRate = overtimeRate ? Number(overtimeRate) : (Number(overtimeRateFromSettings) || 60);
+        }
+
         try {
             const payload = {
                 shiftCode: selectedShiftCode,
                 date: selectedDate,
                 startTime,
                 endTime,
-                overtimeHours: overtimeHours ? Number(overtimeHours) : 0,
-                overtimeHourlyRate: overtimeRate ? Number(overtimeRate) : null,
+                overtimeHours: finalHours,
+                overtimeHourlyRate: finalRate
             };
+
             await api.put(`/shifts/${editShiftId}`, payload);
+
             closeModals();
             loadHistory();
-        } catch { alert("שגיאה בשמירה"); }
+        } catch (error) {
+            console.error("Failed to save shift:", error);
+            alert("שגיאה בשמירה: " + (error.response?.data?.message || "נא לנסות שוב"));
+        }
     };
 
     const handleDeleteShift = async (id) => {
@@ -168,25 +185,21 @@ export default function HistoryPage() {
             {/* History List */}
             <section className="space-y-2 pb-24" dir="rtl">
                 {filteredItems.map((item) => {
-                    const config = shiftConfig[item.shiftType?.toLowerCase()] || shiftConfig.middle;
+                    // Safety check: item.shiftType might be null if data is old
+                    const typeKey = (item.shiftType || item.shiftCode || "middle").toLowerCase();
+                    const config = shiftConfig[typeKey] || shiftConfig.middle;
                     const Icon = config.icon || Clock;
 
                     return (
-                        <div
-                            key={item.id}
-                            className="bg-white rounded-xl border border-zinc-200/60 p-4 transition-all hover:border-zinc-300 relative"
-                        >
+                        <div key={item.id} className="bg-white rounded-xl border border-zinc-200/60 p-4 relative">
                             <div className="flex items-center gap-3">
-                                {/* Icon */}
                                 <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${config.bg} ${config.color} flex-shrink-0`}>
                                     <Icon className="w-5 h-5" />
                                 </div>
-
-                                {/* Content */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-0.5">
                                         <h3 className="text-sm font-medium text-zinc-900 truncate">
-                                            {item.shiftType || item.name}
+                                            {item.shiftType || "משמרת"}
                                         </h3>
                                         {item.overtimeHours > 0 && (
                                             <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 text-[10px] font-semibold">
@@ -197,15 +210,13 @@ export default function HistoryPage() {
                                     <p className="text-xs text-zinc-500 truncate">
                                         {new Date(item.date).toLocaleDateString("he-IL", { day: 'numeric', month: 'short' })}
                                         <span className="mx-1.5">•</span>
-                                        {item.hours.toFixed(1)} שעות
+                                        {item.hours?.toFixed(1) || 0} שעות
                                     </p>
                                 </div>
-
-                                {/* Salary & Menu */}
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                     <div className="text-right">
                                         <div className="text-base font-semibold text-zinc-900">
-                                            ₪{item.salary.toFixed(0)}
+                                            ₪{(item.salary || 0).toFixed(0)}
                                         </div>
                                         {item.tipAmount > 0 && (
                                             <div className="text-[10px] text-emerald-600 font-medium">
@@ -213,42 +224,26 @@ export default function HistoryPage() {
                                             </div>
                                         )}
                                     </div>
-
-                                    {/* Menu Button */}
                                     <div className="relative">
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setActiveMenuId(activeMenuId === item.id ? null : item.id);
                                             }}
-                                            className="p-2 -ml-2 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 active:bg-zinc-100 transition-colors"
+                                            className="p-2 -ml-2 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50"
                                         >
                                             <MoreVertical className="w-4 h-4" />
                                         </button>
-
-                                        {/* Dropdown */}
                                         {activeMenuId === item.id && (
                                             <div className="absolute left-0 top-9 w-36 bg-white rounded-xl shadow-xl border border-zinc-200/60 overflow-hidden z-20">
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleOpenTip(item.id, item.tipAmount); }}
-                                                    className="w-full px-4 py-2.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 text-right flex items-center justify-end gap-2"
-                                                >
-                                                    {item.tipAmount > 0 ? 'ערוך טיפ' : 'הוסף טיפ'}
-                                                    <Wallet className="w-3 h-3" />
+                                                <button onClick={(e) => { e.stopPropagation(); handleOpenTip(item.id, item.tipAmount); }} className="w-full px-4 py-2.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 text-right flex items-center justify-end gap-2">
+                                                    {item.tipAmount > 0 ? 'ערוך טיפ' : 'הוסף טיפ'} <Wallet className="w-3 h-3" />
                                                 </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleEditShift(item); }}
-                                                    className="w-full px-4 py-2.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 text-right flex items-center justify-end gap-2"
-                                                >
-                                                    עריכה
-                                                    <Pencil className="w-3 h-3" />
+                                                <button onClick={(e) => { e.stopPropagation(); handleEditShift(item); }} className="w-full px-4 py-2.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 text-right flex items-center justify-end gap-2">
+                                                    עריכה <Pencil className="w-3 h-3" />
                                                 </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleDeleteShift(item.id); }}
-                                                    className="w-full px-4 py-2.5 text-xs font-medium text-red-600 hover:bg-red-50 text-right flex items-center justify-end gap-2"
-                                                >
-                                                    מחיקה
-                                                    <Trash2 className="w-3 h-3" />
+                                                <button onClick={(e) => { e.stopPropagation(); handleDeleteShift(item.id); }} className="w-full px-4 py-2.5 text-xs font-medium text-red-600 hover:bg-red-50 text-right flex items-center justify-end gap-2">
+                                                    מחיקה <Trash2 className="w-3 h-3" />
                                                 </button>
                                             </div>
                                         )}
@@ -258,14 +253,9 @@ export default function HistoryPage() {
                         </div>
                     );
                 })}
-                {filteredItems.length === 0 && (
-                    <div className="text-center py-12 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
-                        <p className="text-sm text-zinc-400">אין נתונים להצגה</p>
-                    </div>
-                )}
             </section>
 
-            {/* Edit Shift Modal (Copied from HomePage) */}
+            {/* Edit Shift Modal */}
             {isEditOpen && (
                 <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-end justify-center z-50">
                     <div className="bg-white rounded-t-2xl w-full max-w-md px-5 pt-5 pb-8 max-h-[90vh] overflow-y-auto" dir="rtl">
@@ -292,79 +282,23 @@ export default function HistoryPage() {
                             />
                         </div>
 
-                        {/* Shift Types */}
-                        <div className="grid grid-cols-2 gap-3 mb-5">
-                            {shiftTypes.map((shift) => {
-                                const config = shiftConfig[shift.code?.toLowerCase()] || shiftConfig.middle;
-                                const Icon = config.icon;
-                                const isSelected = selectedShiftCode === shift.code;
-                                return (
-                                    <button
-                                        key={shift.code}
-                                        onClick={() => handleShiftSelect(shift)}
-                                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all active:scale-95 ${
-                                            isSelected
-                                                ? 'bg-zinc-800 border-zinc-800 text-white shadow-md'
-                                                : 'border-zinc-200 bg-white text-zinc-600'
-                                        }`}
-                                    >
-                                        <div className={`p-2 rounded-full ${isSelected ? 'bg-white/20' : config.bg}`}>
-                                            <Icon className={`w-6 h-6 ${isSelected ? 'text-white' : config.color}`} />
-                                        </div>
-                                        <span className="text-sm font-semibold">{shift.nameHe}</span>
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        {/* Times */}
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="flex-1">
-                                <label className="text-xs text-zinc-500 mb-1.5 block text-center">התחלה</label>
-                                <input
-                                    type="time"
-                                    value={startTime}
-                                    onChange={(e) => setStartTime(e.target.value)}
-                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-3 text-center text-base font-medium text-zinc-900 focus:outline-none"
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <label className="text-xs text-zinc-500 mb-1.5 block text-center">סיום</label>
-                                <input
-                                    type="time"
-                                    value={endTime}
-                                    onChange={(e) => setEndTime(e.target.value)}
-                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-3 text-center text-base font-medium text-zinc-900 focus:outline-none"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Overtime */}
-                        {!isOvertimeOpen ? (
-                            <button
-                                onClick={() => setIsOvertimeOpen(true)}
-                                className="w-full mb-4 py-2.5 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 text-zinc-600 text-xs font-medium"
-                            >
-                                + שעות נוספות
-                            </button>
-                        ) : (
-                            <div className="mb-4 p-3 rounded-xl bg-zinc-50 border border-zinc-200">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs font-medium text-zinc-900">שעות נוספות</span>
-                                    <button onClick={() => { setIsOvertimeOpen(false); setOvertimeHours(''); }} className="text-xs text-zinc-700">הסר</button>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label className="text-[10px] text-zinc-500 mb-1 block text-center">שעות</label>
-                                        <input type="number" value={overtimeHours} onChange={(e) => setOvertimeHours(e.target.value)} className="w-full bg-white border border-zinc-200 rounded-lg py-2 px-3 text-sm text-center" placeholder="0" />
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] text-zinc-500 mb-1 block text-center">תעריף (₪)</label>
-                                        <input type="number" value={overtimeRate} onChange={(e) => setOvertimeRate(e.target.value)} className="w-full bg-white border border-zinc-200 rounded-lg py-2 px-3 text-sm text-center" placeholder="100%" />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                        {/* 4. Use ShiftForm (Replaces duplicate code) */}
+                        <ShiftForm
+                            shiftTypes={shiftTypes}
+                            selectedShiftCode={selectedShiftCode}
+                            setSelectedShiftCode={setSelectedShiftCode}
+                            startTime={startTime}
+                            setStartTime={setStartTime}
+                            endTime={endTime}
+                            setEndTime={setEndTime}
+                            isOvertimeOpen={isOvertimeOpen}
+                            setIsOvertimeOpen={setIsOvertimeOpen}
+                            overtimeHours={overtimeHours}
+                            setOvertimeHours={setOvertimeHours}
+                            overtimeRate={overtimeRate}
+                            setOvertimeRate={setOvertimeRate}
+                            overtimeRateFromSettings={overtimeRateFromSettings}
+                        />
 
                         <button onClick={handleSaveShift} className="w-full bg-zinc-900 text-white py-3.5 rounded-xl font-medium active:scale-95 transition-transform">
                             שמור שינויים

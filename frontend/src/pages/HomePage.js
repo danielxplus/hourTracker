@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Sun, Sunset, Moon, Clock, X, Plus, Wallet, Pencil, Trash2, MoreVertical, AlertTriangle } from "lucide-react";
 import Layout from "../components/Layout";
+import ShiftForm from "../components/ShiftForm";
 import { useAuth } from "../context/AuthContext";
+import { shiftConfig, getShiftTypeMap } from "../utils/shiftUtils";
 import api from "../api/client";
 import dayjs from "dayjs";
 import DatePicker from "react-datepicker";
@@ -43,65 +45,7 @@ export default function HomePage() {
         return () => window.removeEventListener('click', handleClickOutside);
     }, []);
 
-    const shiftTypeMap = useMemo(() => {
-        const map = {};
-        shiftTypes.forEach(t => {
-            map[t.nameHe] = t;
-            map[t.code] = t;
-        });
-        return map;
-    }, [shiftTypes]);
-
-    const shiftConfig = {
-        morning: {
-            icon: Sun,
-            color: 'text-amber-600',
-            bg: 'bg-amber-50',
-            border: 'border-amber-200',
-            gradient: 'from-amber-400 to-orange-500',
-            activeGradient: 'from-amber-500 to-orange-600'
-        },
-        evening: {
-            icon: Sunset,
-            color: 'text-orange-600',
-            bg: 'bg-orange-50',
-            border: 'border-orange-200',
-            gradient: 'from-orange-400 to-pink-500',
-            activeGradient: 'from-orange-500 to-pink-600'
-        },
-        night: {
-            icon: Moon,
-            color: 'text-indigo-600',
-            bg: 'bg-indigo-50',
-            border: 'border-indigo-200',
-            gradient: 'from-indigo-500 to-blue-800',
-            activeGradient: 'from-indigo-500 to-purple-600'
-        },
-        middle: {
-            icon: Clock,
-            color: 'text-teal-600',
-            bg: 'bg-teal-50',
-            border: 'border-teal-200',
-            gradient: 'from-teal-400 to-emerald-500',
-            activeGradient: 'from-teal-500 to-emerald-600'
-        },
-        '4pm_until_12': {
-            icon: Clock,
-            color: 'text-purple-600',
-            bg: 'bg-purple-50',
-            border: 'border-purple-200',
-            gradient: 'from-purple-400 to-violet-500',
-            activeGradient: 'from-purple-500 to-violet-600'
-        },
-        '7am_until_4': {
-            icon: Clock,
-            color: 'text-cyan-600',
-            bg: 'bg-cyan-50',
-            border: 'border-cyan-200',
-            gradient: 'from-cyan-400 to-sky-500',
-            activeGradient: 'from-cyan-500 to-sky-600'
-        }
-    };
+    const shiftTypeMap = useMemo(() => getShiftTypeMap(shiftTypes), [shiftTypes]);
 
     const userName = user?.displayName || "אורח";
 
@@ -421,10 +365,11 @@ export default function HomePage() {
                     {(() => {
                         // 1. Helper: Check if a shift is currently happening
                         const isActive = (shift) => {
+                            // If manually ended in this session, it's not active
                             if (shift.isEnded || endedLocalIds.includes(shift.id)) return false;
 
                             const now = dayjs();
-                            // Formatting helpers
+                            // Helpers to parse arrays or strings from Java
                             const formatTime = (t) => Array.isArray(t) ? `${String(t[0]).padStart(2, '0')}:${String(t[1]).padStart(2, '0')}` : (t?.slice(0, 5) || "");
                             const formatDate = (d) => Array.isArray(d) ? `${d[0]}-${String(d[1]).padStart(2, '0')}-${String(d[2]).padStart(2, '0')}` : d;
 
@@ -436,37 +381,51 @@ export default function HomePage() {
                                 const start = dayjs(`${dateStr}T${sTime}`);
                                 let end = dayjs(`${dateStr}T${eTime}`);
                                 if (end.isBefore(start)) end = end.add(1, "day");
+
+                                // Active if now is between start and end (with 5 min buffer)
                                 return now.isAfter(start) && now.add(5, 'minute').isBefore(end);
                             }
                             return false;
                         };
 
-                        // 2. Helper: Get numeric value for time sorting
+                        // 2. Helper: Get numeric value for sorting
                         const getTime = (shift) => {
                             const dateStr = Array.isArray(shift.date) ? `${shift.date[0]}-${String(shift.date[1]).padStart(2, '0')}-${String(shift.date[2]).padStart(2, '0')}` : shift.date;
                             const timeStr = Array.isArray(shift.startTime) ? `${String(shift.startTime[0]).padStart(2, '0')}:${String(shift.startTime[1]).padStart(2, '0')}` : (shift.startTime?.slice(0, 5) || "00:00");
                             return dayjs(`${dateStr}T${timeStr}`).valueOf();
                         };
 
-                        // 3. Sort & Slice logic
-                        const sorted = recentShifts.slice().sort((a, b) => {
-                            const activeA = isActive(a);
-                            const activeB = isActive(b);
+                        // 3. STRICT SEPARATION LOGIC
+                        // Find the single active shift
+                        const activeShift = recentShifts.find(s => isActive(s));
 
-                            // PRIORITY 1: If one is active and the other isn't, the active one wins
-                            if (activeA && !activeB) return -1;
-                            if (!activeA && activeB) return 1;
-
-                            // PRIORITY 2: If status is the same, sort by Newest Date
-                            return getTime(b) - getTime(a);
+                        // Create history list by filtering out the active shift ID specifically
+                        // We use String() comparison to be safe against number/string mismatches
+                        let historyList = recentShifts.filter(s => {
+                            if (activeShift && String(s.id) === String(activeShift.id)) return false;
+                            return true;
                         });
 
-                        // 4. Dynamic Limit: Show 4 if top is active, otherwise 3
-                        const limit = (sorted.length > 0 && isActive(sorted[0])) ? 4 : 3;
+                        // Sort history by time (newest first) and take top 3
+                        historyList.sort((a, b) => getTime(b) - getTime(a));
+                        const topHistory = historyList.slice(0, 3);
 
-                        // 5. Render
-                        return sorted.slice(0, limit).map((item) => {
-                            const ongoing = isActive(item); // Reuse the check for styling
+                        // Combine: If active exists, put it first. Then append the top 3 history items.
+                        const displayList = activeShift ? [activeShift, ...topHistory] : topHistory;
+
+                        // 4. Render
+                        if (displayList.length === 0) {
+                            return (
+                                <div className="text-center py-12 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
+                                    <p className="text-sm text-zinc-400">אין משמרות לאחרונה</p>
+                                </div>
+                            );
+                        }
+
+                        return displayList.map((item) => {
+                            // Recalculate ongoing status for styling
+                            const ongoing = activeShift && String(item.id) === String(activeShift.id);
+
                             const config = shiftConfig[item.shiftType?.toLowerCase()] || shiftConfig.middle;
                             const Icon = config.icon || Clock;
 
@@ -474,7 +433,7 @@ export default function HomePage() {
                                 <div
                                     key={item.id}
                                     className={`bg-white rounded-xl border p-4 transition-all ${
-                                        ongoing ? 'border-emerald-300 bg-emerald-50/30' : 'border-zinc-200/60'
+                                        ongoing ? 'border-emerald-300 bg-emerald-50/30 shadow-sm relative z-10' : 'border-zinc-200/60'
                                     }`}
                                 >
                                     <div className="flex items-center gap-3">
@@ -490,7 +449,10 @@ export default function HomePage() {
                                                     {item.shiftType || item.name}
                                                 </h3>
                                                 {ongoing && (
-                                                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+                                                    <span className="flex items-center gap-1 bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full text-[10px] font-bold animate-pulse">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                    פעיל
+                                </span>
                                                 )}
                                             </div>
                                             <p className="text-xs text-zinc-500 truncate">
@@ -504,16 +466,16 @@ export default function HomePage() {
                                         <div className="flex items-center gap-2 flex-shrink-0">
                                             <div className="text-right">
                                                 <div className="text-base font-semibold text-zinc-900">
-                                                    ₪{item.salary.toFixed(0)}
+                                                    ₪{(item.salary || 0).toFixed(0)}
                                                 </div>
-                                                {item.tip > 0 && (
+                                                {item.tipAmount > 0 && (
                                                     <div className="text-[10px] text-emerald-600 font-medium">
-                                                        +₪{item.tip}
+                                                        +₪{item.tipAmount}
                                                     </div>
                                                 )}
                                             </div>
 
-                                            {/* Menu Button Logic */}
+                                            {/* Menu */}
                                             <div className="relative">
                                                 <button
                                                     onClick={(e) => {
@@ -544,11 +506,11 @@ export default function HomePage() {
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 setActiveMenuId(null);
-                                                                handleOpenTip(item.id, item.tip);
+                                                                handleOpenTip(item.id, item.tipAmount);
                                                             }}
                                                             className="w-full px-4 py-2.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 text-right flex items-center justify-end gap-2"
                                                         >
-                                                            {item.tip > 0 ? 'ערוך טיפ' : 'הוסף טיפ'}
+                                                            {item.tipAmount > 0 ? 'ערוך טיפ' : 'הוסף טיפ'}
                                                             <Wallet className="w-3 h-3" />
                                                         </button>
                                                         <button
@@ -584,7 +546,7 @@ export default function HomePage() {
 
                     {recentShifts.length === 0 && (
                         <div className="text-center py-12 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
-                            <p className="text-sm text-zinc-400">אין משמרות לאחרונה</p>
+                            <p className="text-sm text-zinc-400">אין משמרות</p>
                         </div>
                     )}
                 </div>
@@ -627,145 +589,22 @@ export default function HomePage() {
                             />
                         </div>
 
-                        {/* Shift Types */}
-                        <div className="mb-5">
-                            {/* Main 4 shifts in 2x2 grid */}
-                            <div className="grid grid-cols-2 gap-3 mb-3">
-                                {shiftTypes.filter(shift =>
-                                    ['MORNING', 'EVENING', 'NIGHT', 'MIDDLE'].includes(shift.code)
-                                ).map((shift) => {
-                                    const config = shiftConfig[shift.code?.toLowerCase()] || shiftConfig.middle;
-                                    const Icon = config.icon;
-                                    const isSelected = selectedShiftCode === shift.code;
-
-                                    return (
-                                        <button
-                                            key={shift.code}
-                                            onClick={() => handleShiftSelect(shift)}
-                                            className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all active:scale-95 ${isSelected
-                                                ? `bg-gradient-to-br ${config.gradient} border-transparent text-white shadow-lg`
-                                                : 'border-zinc-200 bg-white text-zinc-600 active:bg-zinc-50'
-                                                }`}
-                                        >
-                                            <div className={`p-2 rounded-full ${isSelected ? 'bg-white/20' : config.bg}`}>
-                                                <Icon className={`w-6 h-6 ${isSelected ? 'text-white' : config.color}`} />
-                                            </div>
-                                            <span className="text-sm font-semibold">{shift.nameHe}</span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-
-                            {/* New 2 shifts as smaller buttons */}
-                            <div className="flex gap-2 justify-center">
-                                {shiftTypes.filter(shift =>
-                                    ['4PM_UNTIL_12', '7AM_UNTIL_4'].includes(shift.code)
-                                ).map((shift) => {
-                                    const config = shiftConfig[shift.code?.toLowerCase()] || shiftConfig.middle;
-                                    const Icon = config.icon;
-                                    const isSelected = selectedShiftCode === shift.code;
-
-                                    return (
-                                        <button
-                                            key={shift.code}
-                                            onClick={() => handleShiftSelect(shift)}
-                                            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border-2 transition-all active:scale-95 ${isSelected
-                                                ? `bg-gradient-to-br ${config.gradient} border-transparent text-white shadow-lg`
-                                                : 'border-zinc-200 bg-white text-zinc-600 active:bg-zinc-50'
-                                                }`}
-                                        >
-                                            <Icon className={`w-4 h-4 ${isSelected ? 'text-white' : config.color}`} />
-                                            <span className="text-xs font-semibold">{shift.nameHe}</span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        {/* Times */}
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="flex-1">
-                                <label className="text-xs text-zinc-500 mb-1.5 block text-center">התחלה</label>
-                                <input
-                                    type="time"
-                                    value={startTime}
-                                    onChange={(e) => setStartTime(e.target.value)}
-                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-3 text-center text-base font-medium text-zinc-900 focus:outline-none active:bg-zinc-100"
-                                    dir="ltr"
-                                    step="60"
-                                />
-                            </div>
-                            <div className="text-zinc-300 pt-5">-</div>
-                            <div className="flex-1">
-                                <label className="text-xs text-zinc-500 mb-1.5 block text-center">סיום</label>
-                                <input
-                                    type="time"
-                                    value={endTime}
-                                    onChange={(e) => setEndTime(e.target.value)}
-                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-3 text-center text-base font-medium text-zinc-900 focus:outline-none active:bg-zinc-100"
-                                    dir="ltr"
-                                    step="60"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Overtime */}
-                        {!isOvertimeOpen ? (
-                            <button
-                                onClick={() => setIsOvertimeOpen(true)}
-                                className="w-full mb-4 py-2.5 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 text-zinc-600 text-xs font-medium"
-                            >
-                                שעות נוספות +
-                            </button>
-                        ) : (
-                            <div className="mb-4 p-3 rounded-xl bg-zinc-50 border border-dashed border-zinc-300">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs font-medium text-zinc-900">שעות נוספות</span>
-                                    <button
-                                        onClick={() => {
-                                            setIsOvertimeOpen(false);
-                                            setOvertimeHours('');
-                                            setOvertimeRate('');
-                                        }}
-                                        className="text-xs text-zinc-700"
-                                    >
-                                        הסר
-                                    </button>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label className="text-[10px] text-zinc-800 mb-1 block text-center">שעות</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="0.25"
-                                            value={overtimeHours}
-                                            onChange={(e) => setOvertimeHours(e.target.value)}
-                                            onKeyDown={(e) => {
-                                                // Prevent 'e', '-', '+'
-                                                if (["e", "E", "-", "+"].includes(e.key)) {
-                                                    e.preventDefault();
-                                                }
-                                            }}
-                                            className="w-full bg-white border border-zinc-200 rounded-lg py-2 px-3 text-sm text-center focus:outline-none"
-                                            placeholder="0"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] text-zinc-800 mb-1 block text-center">תעריף (₪)</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="1"
-                                            value={overtimeRate || overtimeRateFromSettings}
-                                            onChange={(e) => setOvertimeRate(e.target.value)}
-                                            className="w-full bg-white border border-zinc-200 rounded-lg py-2 px-3 text-sm text-center focus:outline-none"
-                                            placeholder={overtimeRateFromSettings || '0'}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                        <ShiftForm
+                            shiftTypes={shiftTypes}
+                            selectedShiftCode={selectedShiftCode}
+                            setSelectedShiftCode={setSelectedShiftCode}
+                            startTime={startTime}
+                            setStartTime={setStartTime}
+                            endTime={endTime}
+                            setEndTime={setEndTime}
+                            isOvertimeOpen={isOvertimeOpen}
+                            setIsOvertimeOpen={setIsOvertimeOpen}
+                            overtimeHours={overtimeHours}
+                            setOvertimeHours={setOvertimeHours}
+                            overtimeRate={overtimeRate}
+                            setOvertimeRate={setOvertimeRate}
+                            overtimeRateFromSettings={user?.settings?.overtimeHourlyRate} // Or however you get settings in Home
+                        />
 
                         <button
                             onClick={handleCreateShift}
