@@ -85,14 +85,7 @@ export default function HomePage() {
             gradient: 'from-teal-400 to-emerald-500',
             activeGradient: 'from-teal-500 to-emerald-600'
         },
-        '4pm_until_12': {
-            icon: Clock,
-            color: 'text-purple-600',
-            bg: 'bg-purple-50',
-            border: 'border-purple-200',
-            gradient: 'from-purple-400 to-violet-500',
-            activeGradient: 'from-purple-500 to-violet-600'
-        },
+
         '7am_until_4': {
             icon: Clock,
             color: 'text-cyan-600',
@@ -100,6 +93,14 @@ export default function HomePage() {
             border: 'border-cyan-200',
             gradient: 'from-cyan-400 to-sky-500',
             activeGradient: 'from-cyan-500 to-sky-600'
+        },
+        '4pm_until_12': {
+            icon: Clock,
+            color: 'text-purple-600',
+            bg: 'bg-purple-50',
+            border: 'border-purple-200',
+            gradient: 'from-purple-400 to-violet-500',
+            activeGradient: 'from-purple-500 to-violet-600'
         }
     };
 
