@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Sun, Sunset, Moon, Clock, X, Plus, Wallet, Pencil, Trash2, MoreVertical, AlertTriangle } from "lucide-react";
+import { Sun, Sunset, Moon, Clock, X, Plus, Wallet, Pencil, Trash2, MoreVertical, AlertTriangle, CalendarDays } from "lucide-react";
 import Layout from "../components/Layout";
 import ShiftForm from "../components/ShiftForm";
+import WeeklyShiftModal from "../components/WeeklyShiftModal";
 import { useAuth } from "../context/AuthContext";
 import { shiftConfig, getShiftTypeMap } from "../utils/shiftUtils";
 import api from "../api/client";
@@ -39,6 +40,7 @@ export default function HomePage() {
     const [deleteShiftId, setDeleteShiftId] = useState(null);
     const [endShiftId, setEndShiftId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isWeeklyShiftOpen, setIsWeeklyShiftOpen] = useState(false);
 
     useEffect(() => {
         const handleClickOutside = () => setActiveMenuId(null);
@@ -336,6 +338,29 @@ export default function HomePage() {
         }
     }
 
+    async function handleSaveWeeklyShifts(shiftsData) {
+        try {
+            // Create all shifts in parallel
+            const promises = shiftsData.map(shift =>
+                api.post("/shifts", {
+                    shiftCode: shift.shiftCode,
+                    date: shift.date,
+                    startTime: shift.startTime,
+                    endTime: shift.endTime,
+                    overtimeHours: 0,
+                    overtimeHourlyRate: null
+                })
+            );
+
+            await Promise.all(promises);
+            refreshSummary();
+            refreshUser();
+        } catch (error) {
+            console.error("Error saving weekly shifts:", error);
+            alert("שגיאה בשמירת המשמרות");
+        }
+    }
+
     return (
         <Layout>
             <header className="mb-6 pt-2" dir="rtl">
@@ -511,13 +536,35 @@ export default function HomePage() {
                 </div>
             </section>
 
-            {/* FAB */}
-            <button
-                onClick={handleOpenAdd}
-                className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-zinc-900 text-white p-4 rounded-full shadow-lg active:scale-95 transition-transform z-40"
-            >
-                <Plus className="w-6 h-6" />
-            </button>
+            {/* FAB Buttons */}
+            <div className="fixed bottom-20 left-1/2 -translate-x-1/2 flex gap-3 z-40">
+                {/* Weekly Shift Button */}
+                <button
+                    onClick={() => setIsWeeklyShiftOpen(true)}
+                    className="bg-emerald-600 text-white px-4 py-3 rounded-full shadow-lg active:scale-95 transition-transform flex items-center gap-2"
+                    title="הוספת משמרות לשבוע"
+                >
+                    <CalendarDays className="w-5 h-5" />
+                    <span className="text-sm font-medium">שבוע</span>
+                </button>
+
+                {/* Single Shift Button */}
+                <button
+                    onClick={handleOpenAdd}
+                    className="bg-zinc-900 text-white p-4 rounded-full shadow-lg active:scale-95 transition-transform"
+                    title="הוספת משמרת בודדת"
+                >
+                    <Plus className="w-6 h-6" />
+                </button>
+            </div>
+
+            {/* Weekly Shift Modal */}
+            <WeeklyShiftModal
+                isOpen={isWeeklyShiftOpen}
+                onClose={() => setIsWeeklyShiftOpen(false)}
+                shiftTypes={shiftTypes}
+                onSave={handleSaveWeeklyShifts}
+            />
 
             {/* Add Shift Modal */}
             {isAddOpen && (

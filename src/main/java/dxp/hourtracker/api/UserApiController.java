@@ -68,6 +68,18 @@ public class UserApiController {
 
         response.put("displayName", user.getDisplayName() != null ? user.getDisplayName() : "אורח");
         response.put("email", user.getEmail());
+
+        // Add settings info (isPremium and theme)
+        UserSettings settings = userSettingsRepository.findByUserId(externalId).orElse(null);
+        if (settings != null) {
+            response.put("isPremium", settings.getIsPremium() != null ? settings.getIsPremium() : true);
+            response.put("themePreference",
+                    settings.getThemePreference() != null ? settings.getThemePreference() : "default");
+        } else {
+            response.put("isPremium", true);
+            response.put("themePreference", "default");
+        }
+
         return response;
     }
 
@@ -165,6 +177,8 @@ public class UserApiController {
             response.put("hourlyRate", 0);
             response.put("overtimeHourlyRate", 0);
             response.put("shabatHourlyRate", 0);
+            response.put("isPremium", false);
+            response.put("themePreference", "default");
             return response;
         }
         String userId = principal.getName();
@@ -180,6 +194,8 @@ public class UserApiController {
                     s.setHourlyRate(defaultBase);
                     s.setOvertimeHourlyRate(defaultBase * 1.25);
                     s.setShabatHourlyRate(defaultBase * 1.50);
+                    s.setIsPremium(true);
+                    s.setThemePreference("default");
                     return userSettingsRepository.save(s);
                 });
 
@@ -200,6 +216,9 @@ public class UserApiController {
         response.put("hourlyRate", currentRate);
         response.put("overtimeHourlyRate", currentOvertime);
         response.put("shabatHourlyRate", currentShabat);
+        response.put("isPremium", settings.getIsPremium() != null ? settings.getIsPremium() : true);
+        response.put("themePreference",
+                settings.getThemePreference() != null ? settings.getThemePreference() : "default");
         return response;
     }
 
@@ -212,6 +231,7 @@ public class UserApiController {
             response.put("hourlyRate", 0);
             response.put("overtimeHourlyRate", 0);
             response.put("shabatHourlyRate", 0);
+            response.put("themePreference", "default");
             return response;
         }
         String userId = principal.getName();
@@ -243,21 +263,30 @@ public class UserApiController {
             shabatHourlyRate = 76.5; // 51 * 1.5
         }
 
+        // Handle theme preference
+        String themePreference = (String) body.get("themePreference");
+        if (themePreference == null || themePreference.trim().isEmpty()) {
+            themePreference = "default";
+        }
+
         UserSettings settings = userSettingsRepository
                 .findByUserId(userId)
                 .orElseGet(() -> {
                     UserSettings s = new UserSettings();
                     s.setUserId(userId);
+                    s.setIsPremium(true);
                     return s;
                 });
         settings.setHourlyRate(hourlyRate);
         settings.setOvertimeHourlyRate(overtimeHourlyRate);
         settings.setShabatHourlyRate(shabatHourlyRate);
+        settings.setThemePreference(themePreference);
         userSettingsRepository.save(settings);
 
         response.put("hourlyRate", settings.getHourlyRate());
         response.put("overtimeHourlyRate", settings.getOvertimeHourlyRate());
         response.put("shabatHourlyRate", settings.getShabatHourlyRate());
+        response.put("themePreference", settings.getThemePreference());
         return response;
     }
 

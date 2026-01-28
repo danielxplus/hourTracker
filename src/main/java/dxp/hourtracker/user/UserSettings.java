@@ -31,10 +31,13 @@ public class UserSettings {
      * flag for premium users
      */
     @Builder.Default
-    @Column(
-            name = "is_premium",
-            nullable = false,
-            columnDefinition = "boolean default false" // <--- ADD THIS LINE
-    )
+    @Column(name = "is_premium", nullable = false, columnDefinition = "boolean default false")
     private Boolean isPremium = true;
+
+    /**
+     * Theme preference: "default", "light", "dark", "pitch-black"
+     */
+    @Builder.Default
+    @Column(name = "theme_preference")
+    private String themePreference = "default";
 }

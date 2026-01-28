@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { User, Banknote, LogOut, Check, X } from "lucide-react";
+import { User, Banknote, LogOut, Check, X, Palette } from "lucide-react";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import api from "../api/client";
 
 export default function SettingsPage() {
   const { user, refreshUser, logout } = useAuth();
+  const { currentTheme, updateTheme, themes } = useTheme();
 
   const [hourlyRate, setHourlyRate] = useState(51);
   const [overtimeHourlyRate, setOvertimeHourlyRate] = useState(63.75);
@@ -181,6 +183,51 @@ export default function SettingsPage() {
                 <span className="text-xs text-zinc-400 font-medium">₪</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Theme Selection */}
+        <div className="bg-white rounded-2xl border border-zinc-200/60 p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Palette className="w-5 h-5 text-emerald-600" />
+            <h3 className="text-sm font-medium text-zinc-900">ערכת נושא</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {Object.entries(themes).map(([key, theme]) => (
+              <button
+                key={key}
+                onClick={() => updateTheme(key)}
+                className={`relative p-3 rounded-xl border-2 transition-all ${currentTheme === key
+                    ? 'border-emerald-500 bg-emerald-50'
+                    : 'border-zinc-200 hover:border-zinc-300'
+                  }`}
+              >
+                <div className="flex flex-col items-start gap-2">
+                  <div className="flex items-center gap-2 w-full">
+                    <div className="text-sm font-medium text-zinc-900">{theme.name}</div>
+                    {currentTheme === key && (
+                      <Check className="w-4 h-4 text-emerald-600 mr-auto" />
+                    )}
+                  </div>
+                  <div className="text-xs text-zinc-500 text-right">{theme.description}</div>
+                  {/* Theme preview */}
+                  <div className="flex gap-1 mt-1">
+                    <div
+                      className="w-6 h-6 rounded border border-zinc-200"
+                      style={{ backgroundColor: theme.vars['--bg-primary'] }}
+                    />
+                    <div
+                      className="w-6 h-6 rounded border border-zinc-200"
+                      style={{ backgroundColor: theme.vars['--accent-primary'] }}
+                    />
+                    <div
+                      className="w-6 h-6 rounded border border-zinc-200"
+                      style={{ backgroundColor: theme.vars['--accent-secondary'] }}
+                    />
+                  </div>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 
