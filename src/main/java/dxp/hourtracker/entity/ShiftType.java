@@ -44,6 +44,9 @@ public class ShiftType {
     @Column(name = "unpaid_break_minutes")
     private Integer unpaidBreakMinutes;
 
+    @Column(name = "sort_order")
+    private Integer sortOrder = 100;
+
 }
 
 

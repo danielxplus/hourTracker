@@ -38,6 +38,7 @@ export default function HomePage() {
     const [activeMenuId, setActiveMenuId] = useState(null);
     const [deleteShiftId, setDeleteShiftId] = useState(null);
     const [endShiftId, setEndShiftId] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const handleClickOutside = () => setActiveMenuId(null);
@@ -69,58 +70,20 @@ export default function HomePage() {
             if (summaryRes.data.recentShifts && summaryRes.data.recentShifts.length > 0) {
                 shiftsPool = summaryRes.data.recentShifts;
             } else if (historyRes.data.items) {
-                // Fetch more (e.g. 10) to catch the active one if it's buried
-                shiftsPool = historyRes.data.items.slice(0, 10);
+                // Only fetch 5 items since we display max 4 (1 active + 3 history)
+                shiftsPool = historyRes.data.items.slice(0, 5);
             }
 
-            // SORT: Force ongoing shifts to the top
-            const now = dayjs();
-
-            const sorted = [...shiftsPool].sort((a, b) => {
-                // Helper to check if a shift is ongoing
-                const isOngoing = (shift) => {
-                    // Check if manually ended locally
-                    if (endedLocalIds.includes(shift.id)) return false;
-
-                    // Backend flag check (if backend sends 'isEnded' or similar)
-                    if (shift.isEnded) return false;
-
-                    // Date/Time calculation check
-                    const dateStr = shift.date;
-                    const sTime = shift.startTime?.slice(0, 5);
-                    const eTime = shift.endTime?.slice(0, 5);
-
-                    if (dateStr && sTime && eTime) {
-                        const start = dayjs(`${dateStr}T${sTime}`);
-                        let end = dayjs(`${dateStr}T${eTime}`);
-                        if (end.isBefore(start)) end = end.add(1, "day");
-
-                        // It is ongoing if NOW is between start and end (with buffer)
-                        return now.isAfter(start) && now.add(5, 'minute').isBefore(end);
-                    }
-                    return false;
-                };
-
-                const aActive = isOngoing(a);
-                const bActive = isOngoing(b);
-
-                // If A is active and B is not, A comes first (-1)
-                if (aActive && !bActive) return -1;
-                // If B is active and A is not, B comes first (1)
-                if (!aActive && bActive) return 1;
-
-                // Otherwise, keep original order (usually date desc)
-                return 0;
-            });
-
-            // 3. Slice to final display count (e.g., 3 or 5) AFTER sorting
-            setRecentShifts(sorted.slice(0, 5));
+            // Store raw shifts without sorting - we'll sort in useMemo for better performance
+            setRecentShifts(shiftsPool);
 
             if (settingsRes.data.overtimeHourlyRate) {
                 setOvertimeRateFromSettings(settingsRes.data.overtimeHourlyRate);
             }
         } catch {
             // ignore
+        } finally {
+            setIsLoading(false);
         }
     }
 
@@ -129,6 +92,72 @@ export default function HomePage() {
         refreshSummary();
         api.get("/shift-types").then(res => setShiftTypes(res.data));
     }, []);
+
+    // Memoized helper functions for shift calculations
+    const formatTime = useMemo(() => (val) => {
+        if (Array.isArray(val)) {
+            return `${String(val[0]).padStart(2, '0')}:${String(val[1]).padStart(2, '0')}`;
+        }
+        if (typeof val === 'string') {
+            return val.slice(0, 5);
+        }
+        return "";
+    }, []);
+
+    const formatDate = useMemo(() => (d) => {
+        if (Array.isArray(d)) {
+            return `${d[0]}-${String(d[1]).padStart(2, '0')}-${String(d[2]).padStart(2, '0')}`;
+        }
+        return d;
+    }, []);
+
+    // Memoized function to check if a shift is currently active
+    const isShiftActive = useMemo(() => (shift) => {
+        if (shift.isEnded || endedLocalIds.includes(shift.id)) return false;
+
+        const now = dayjs();
+        const dateStr = formatDate(shift.date);
+        const sTime = formatTime(shift.startTime) || shiftTypeMap[shift.shiftType]?.defaultStart;
+        const eTime = formatTime(shift.endTime) || shiftTypeMap[shift.shiftType]?.defaultEnd;
+
+        if (dateStr && sTime && eTime) {
+            const start = dayjs(`${dateStr}T${sTime}`);
+            let end = dayjs(`${dateStr}T${eTime}`);
+            if (end.isBefore(start)) end = end.add(1, "day");
+
+            return now.isAfter(start) && now.add(5, 'minute').isBefore(end);
+        }
+        return false;
+    }, [endedLocalIds, shiftTypeMap, formatTime, formatDate]);
+
+    // Memoized sorted and filtered shift list for display
+    const displayShifts = useMemo(() => {
+        if (recentShifts.length === 0) return [];
+
+        // Find the active shift
+        const activeShift = recentShifts.find(s => isShiftActive(s));
+
+        // Get history (all non-active shifts)
+        let historyList = recentShifts.filter(s => {
+            if (activeShift && String(s.id) === String(activeShift.id)) return false;
+            return true;
+        });
+
+        // Sort history by date/time (newest first)
+        historyList.sort((a, b) => {
+            const dateA = formatDate(a.date);
+            const timeA = formatTime(a.startTime) || "00:00";
+            const dateB = formatDate(b.date);
+            const timeB = formatTime(b.startTime) || "00:00";
+            return dayjs(`${dateB}T${timeB}`).valueOf() - dayjs(`${dateA}T${timeA}`).valueOf();
+        });
+
+        // Take top 3 history items
+        const topHistory = historyList.slice(0, 3);
+
+        // Combine: active first, then history
+        return activeShift ? [activeShift, ...topHistory] : topHistory;
+    }, [recentShifts, isShiftActive, formatDate, formatTime]);
 
     const handleShiftSelect = (shift) => {
         setSelectedShiftCode(shift.code);
@@ -157,17 +186,6 @@ export default function HomePage() {
         setSelectedDate(shift.date);
         const t = shiftTypeMap[shift.shiftType];
         if (t) setSelectedShiftCode(t.code);
-
-        // Fix time display: handle array [H, M] or string "HH:mm:ss"
-        const formatTime = (val) => {
-            if (Array.isArray(val)) {
-                return `${String(val[0]).padStart(2, '0')}:${String(val[1]).padStart(2, '0')}`;
-            }
-            if (typeof val === 'string') {
-                return val.slice(0, 5);
-            }
-            return "";
-        };
 
         setStartTime(formatTime(shift.startTime));
         setEndTime(formatTime(shift.endTime));
@@ -362,79 +380,26 @@ export default function HomePage() {
             <section dir="rtl">
                 <h2 className="text-sm font-medium text-zinc-700 mb-3">משמרות אחרונות</h2>
                 <div className="space-y-2">
-                    {(() => {
-                        // 1. Helper: Check if a shift is currently happening
-                        const isActive = (shift) => {
-                            // If manually ended in this session, it's not active
-                            if (shift.isEnded || endedLocalIds.includes(shift.id)) return false;
-
-                            const now = dayjs();
-                            // Helpers to parse arrays or strings from Java
-                            const formatTime = (t) => Array.isArray(t) ? `${String(t[0]).padStart(2, '0')}:${String(t[1]).padStart(2, '0')}` : (t?.slice(0, 5) || "");
-                            const formatDate = (d) => Array.isArray(d) ? `${d[0]}-${String(d[1]).padStart(2, '0')}-${String(d[2]).padStart(2, '0')}` : d;
-
-                            const dateStr = formatDate(shift.date);
-                            const sTime = formatTime(shift.startTime) || shiftTypeMap[shift.shiftType]?.defaultStart;
-                            const eTime = formatTime(shift.endTime) || shiftTypeMap[shift.shiftType]?.defaultEnd;
-
-                            if (dateStr && sTime && eTime) {
-                                const start = dayjs(`${dateStr}T${sTime}`);
-                                let end = dayjs(`${dateStr}T${eTime}`);
-                                if (end.isBefore(start)) end = end.add(1, "day");
-
-                                // Active if now is between start and end (with 5 min buffer)
-                                return now.isAfter(start) && now.add(5, 'minute').isBefore(end);
-                            }
-                            return false;
-                        };
-
-                        // 2. Helper: Get numeric value for sorting
-                        const getTime = (shift) => {
-                            const dateStr = Array.isArray(shift.date) ? `${shift.date[0]}-${String(shift.date[1]).padStart(2, '0')}-${String(shift.date[2]).padStart(2, '0')}` : shift.date;
-                            const timeStr = Array.isArray(shift.startTime) ? `${String(shift.startTime[0]).padStart(2, '0')}:${String(shift.startTime[1]).padStart(2, '0')}` : (shift.startTime?.slice(0, 5) || "00:00");
-                            return dayjs(`${dateStr}T${timeStr}`).valueOf();
-                        };
-
-                        // 3. STRICT SEPARATION LOGIC
-                        // Find the single active shift
-                        const activeShift = recentShifts.find(s => isActive(s));
-
-                        // Create history list by filtering out the active shift ID specifically
-                        // We use String() comparison to be safe against number/string mismatches
-                        let historyList = recentShifts.filter(s => {
-                            if (activeShift && String(s.id) === String(activeShift.id)) return false;
-                            return true;
-                        });
-
-                        // Sort history by time (newest first) and take top 3
-                        historyList.sort((a, b) => getTime(b) - getTime(a));
-                        const topHistory = historyList.slice(0, 3);
-
-                        // Combine: If active exists, put it first. Then append the top 3 history items.
-                        const displayList = activeShift ? [activeShift, ...topHistory] : topHistory;
-
-                        // 4. Render
-                        if (displayList.length === 0) {
-                            return (
-                                <div className="text-center py-12 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
-                                    <p className="text-sm text-zinc-400">אין משמרות לאחרונה</p>
-                                </div>
-                            );
-                        }
-
-                        return displayList.map((item) => {
-                            // Recalculate ongoing status for styling
-                            const ongoing = activeShift && String(item.id) === String(activeShift.id);
-
+                    {isLoading ? (
+                        <div className="text-center py-12 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
+                            <div className="inline-block w-8 h-8 border-3 border-zinc-300 border-t-zinc-600 rounded-full animate-spin mb-2"></div>
+                            <p className="text-sm text-zinc-400">טוען משמרות...</p>
+                        </div>
+                    ) : displayShifts.length === 0 ? (
+                        <div className="text-center py-12 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
+                            <p className="text-sm text-zinc-400">אין משמרות לאחרונה</p>
+                        </div>
+                    ) : (
+                        displayShifts.map((item) => {
+                            const ongoing = isShiftActive(item);
                             const config = shiftConfig[item.shiftType?.toLowerCase()] || shiftConfig.middle;
                             const Icon = config.icon || Clock;
 
                             return (
                                 <div
                                     key={item.id}
-                                    className={`bg-white rounded-xl border p-4 transition-all ${
-                                        ongoing ? 'border-emerald-300 bg-emerald-50/30 shadow-sm relative z-10' : 'border-zinc-200/60'
-                                    }`}
+                                    className={`bg-white rounded-xl border p-4 transition-all ${ongoing ? 'border-emerald-300 bg-emerald-50/30 shadow-sm relative z-10' : 'border-zinc-200/60'
+                                        }`}
                                 >
                                     <div className="flex items-center gap-3">
                                         {/* Icon */}
@@ -450,9 +415,9 @@ export default function HomePage() {
                                                 </h3>
                                                 {ongoing && (
                                                     <span className="flex items-center gap-1 bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full text-[10px] font-bold animate-pulse">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                                    פעיל
-                                </span>
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                                        פעיל
+                                                    </span>
                                                 )}
                                             </div>
                                             <p className="text-xs text-zinc-500 truncate">
@@ -541,13 +506,7 @@ export default function HomePage() {
                                     </div>
                                 </div>
                             );
-                        });
-                    })()}
-
-                    {recentShifts.length === 0 && (
-                        <div className="text-center py-12 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
-                            <p className="text-sm text-zinc-400">אין משמרות</p>
-                        </div>
+                        })
                     )}
                 </div>
             </section>
