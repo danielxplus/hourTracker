@@ -11,6 +11,7 @@ import "react-datepicker/dist/react-datepicker.css";
 export default function HistoryPage() {
     // Default to 60 or a safe number so we never send 0 if settings fail to load
     const [overtimeRateFromSettings, setOvertimeRateFromSettings] = useState(60);
+    const [isPremium, setIsPremium] = useState(true);
     const [viewMode, setViewMode] = useState("list"); // "list" or "calendar"
 
     // --- Data States ---
@@ -55,6 +56,7 @@ export default function HistoryPage() {
             if (res.data.overtimeHourlyRate) {
                 setOvertimeRateFromSettings(res.data.overtimeHourlyRate);
             }
+            setIsPremium(res.data.isPremium ?? true);
         }).catch(() => { });
 
         const handleClickOutside = () => setActiveMenuId(null);
@@ -197,6 +199,7 @@ export default function HistoryPage() {
                 /* Calendar View */
                 <CalendarView
                     shifts={items}
+                    isPremium={isPremium}
                     onDayClick={(dayShifts) => {
                         // Could open a modal showing shifts for that day
                         console.log("Day shifts:", dayShifts);

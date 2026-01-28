@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { User, Banknote, LogOut, Check, X, Palette } from "lucide-react";
+import { User, Banknote, LogOut, Check, X, Palette, Lock } from "lucide-react";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -16,6 +16,7 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [savedSection, setSavedSection] = useState("");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isPremium, setIsPremium] = useState(true);
 
   useEffect(() => {
     async function load() {
@@ -37,6 +38,8 @@ export default function SettingsPage() {
         } else {
           setShabatHourlyRate(fetchedShabat);
         }
+
+        setIsPremium(res.data.isPremium ?? true);
 
         if (user) {
           setDisplayName(user.displayName || "");
@@ -198,8 +201,8 @@ export default function SettingsPage() {
                 key={key}
                 onClick={() => updateTheme(key)}
                 className={`relative p-3 rounded-xl border-2 transition-all ${currentTheme === key
-                    ? 'border-emerald-500 bg-emerald-50'
-                    : 'border-zinc-200 hover:border-zinc-300'
+                  ? 'border-emerald-500 bg-emerald-50'
+                  : 'border-zinc-200 hover:border-zinc-300'
                   }`}
               >
                 <div className="flex flex-col items-start gap-2">

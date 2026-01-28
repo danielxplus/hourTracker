@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Calendar } from "lucide-react";
 import dayjs from "dayjs";
 import { shiftConfig } from "../utils/shiftUtils";
+import PremiumLock from "./PremiumLock";
 
-export default function CalendarView({ shifts, onDayClick }) {
+export default function CalendarView({ shifts, onDayClick, isPremium = true }) {
     const [currentMonth, setCurrentMonth] = useState(dayjs());
+    const [viewMode, setViewMode] = useState('month'); // 'month' or 'year'
 
     // Get all days in the current month
     const startOfMonth = currentMonth.startOf('month');
@@ -40,6 +42,28 @@ export default function CalendarView({ shifts, onDayClick }) {
         return dayShifts.reduce((sum, shift) => sum + (shift.hours || 0), 0);
     };
 
+    // Calculate total salary for a day
+    const getTotalSalary = (dayShifts) => {
+        return dayShifts.reduce((sum, shift) => sum + (shift.salary || 0), 0);
+    };
+
+    // Get shifts for a specific month (for yearly view)
+    const getShiftsForMonth = (year, month) => {
+        const startOfMonth = dayjs().year(year).month(month - 1).startOf('month');
+        const endOfMonth = dayjs().year(year).month(month - 1).endOf('month');
+
+        return shifts.filter(shift => {
+            const shiftDate = dayjs(shift.date);
+            return shiftDate.isSameOrAfter(startOfMonth, 'day') && shiftDate.isSameOrBefore(endOfMonth, 'day');
+        });
+    };
+
+    // Calculate monthly salary
+    const getMonthSalary = (year, month) => {
+        const monthShifts = getShiftsForMonth(year, month);
+        return monthShifts.reduce((sum, shift) => sum + (shift.salary || 0), 0);
+    };
+
     // Navigate months
     const goToPreviousMonth = () => {
         setCurrentMonth(prev => prev.subtract(1, 'month'));
@@ -60,6 +84,89 @@ export default function CalendarView({ shifts, onDayClick }) {
 
     const dayNames = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
 
+    // Yearly view rendering
+    if (viewMode === 'year') {
+        const currentYear = currentMonth.year();
+        const months = Array.from({ length: 12 }, (_, i) => i + 1);
+
+        return (
+            <div className="bg-white rounded-2xl border border-zinc-200/60 p-4 relative" dir="rtl">
+                {!isPremium && <PremiumLock message="תצוגה שנתית זמינה למשתמשי פרמיום בלבד" />}
+
+                {/* Header */}
+                <div className="flex items-center justify-between mb-4">
+                    <button
+                        onClick={() => setCurrentMonth(prev => prev.subtract(1, 'year'))}
+                        className="p-2 rounded-lg hover:bg-zinc-100 transition-colors"
+                    >
+                        <ChevronRight className="w-5 h-5 text-zinc-600" />
+                    </button>
+
+                    <div className="flex items-center gap-3">
+                        <h3 className="text-base font-semibold text-zinc-900">
+                            {currentYear}
+                        </h3>
+                        <button
+                            onClick={() => setViewMode('month')}
+                            className="text-xs px-3 py-1.5 rounded-md bg-emerald-50 text-emerald-700 font-medium hover:bg-emerald-100 transition-colors flex items-center gap-1"
+                        >
+                            <Calendar className="w-3.5 h-3.5" />
+                            חודשי
+                        </button>
+                    </div>
+
+                    <button
+                        onClick={() => setCurrentMonth(prev => prev.add(1, 'year'))}
+                        className="p-2 rounded-lg hover:bg-zinc-100 transition-colors"
+                    >
+                        <ChevronLeft className="w-5 h-5 text-zinc-600" />
+                    </button>
+                </div>
+
+                {/* Yearly Grid */}
+                <div className="grid grid-cols-3 gap-3">
+                    {months.map(month => {
+                        const monthSalary = getMonthSalary(currentYear, month);
+                        const monthShifts = getShiftsForMonth(currentYear, month);
+                        const hasShifts = monthShifts.length > 0;
+                        const monthName = dayjs().month(month - 1).format('MMM');
+
+                        return (
+                            <button
+                                key={month}
+                                onClick={() => {
+                                    setCurrentMonth(dayjs().year(currentYear).month(month - 1));
+                                    setViewMode('month');
+                                }}
+                                className={`p-4 rounded-xl border transition-all ${hasShifts
+                                    ? 'border-purple-200 bg-purple-50 hover:bg-purple-100'
+                                    : 'border-zinc-100 hover:bg-zinc-50'
+                                    }`}
+                            >
+                                <div className="text-sm font-medium text-zinc-900 mb-2">
+                                    {monthName}
+                                </div>
+                                {hasShifts ? (
+                                    <>
+                                        <div className="text-lg font-semibold text-purple-900">
+                                            ₪{monthSalary.toFixed(0)}
+                                        </div>
+                                        <div className="text-xs text-zinc-500 mt-1">
+                                            {monthShifts.length} משמרות
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="text-xs text-zinc-400">אין משמרות</div>
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    }
+
+    // Monthly view (existing code)
     return (
         <div className="bg-white rounded-2xl border border-zinc-200/60 p-4" dir="rtl">
             {/* Header */}
@@ -81,6 +188,15 @@ export default function CalendarView({ shifts, onDayClick }) {
                     >
                         היום
                     </button>
+                    {isPremium && (
+                        <button
+                            onClick={() => setViewMode('year')}
+                            className="text-xs px-3 py-1.5 rounded-md bg-purple-50 text-purple-700 font-medium hover:bg-purple-100 transition-colors flex items-center gap-1"
+                        >
+                            <Calendar className="w-3.5 h-3.5" />
+                            שנתי
+                        </button>
+                    )}
                 </div>
 
                 <button
@@ -109,6 +225,7 @@ export default function CalendarView({ shifts, onDayClick }) {
 
                     const dayShifts = getShiftsForDay(day);
                     const totalHours = getTotalHours(dayShifts);
+                    const totalSalary = getTotalSalary(dayShifts);
                     const hasShifts = dayShifts.length > 0;
                     const today = isToday(day);
 
@@ -117,10 +234,10 @@ export default function CalendarView({ shifts, onDayClick }) {
                             key={day}
                             onClick={() => hasShifts && onDayClick && onDayClick(dayShifts)}
                             className={`aspect-square p-1 rounded-lg border transition-all ${today
-                                    ? 'border-emerald-500 bg-emerald-50'
-                                    : hasShifts
-                                        ? 'border-purple-200 bg-purple-50 hover:bg-purple-100 cursor-pointer'
-                                        : 'border-zinc-100 hover:bg-zinc-50'
+                                ? 'border-emerald-500 bg-emerald-50'
+                                : hasShifts
+                                    ? 'border-purple-200 bg-purple-50 hover:bg-purple-100 cursor-pointer'
+                                    : 'border-zinc-100 hover:bg-zinc-50'
                                 }`}
                         >
                             <div className="flex flex-col items-center justify-center h-full">
@@ -130,7 +247,7 @@ export default function CalendarView({ shifts, onDayClick }) {
                                 </span>
                                 {hasShifts && (
                                     <div className="mt-0.5">
-                                        <div className="flex items-center gap-0.5">
+                                        <div className="flex items-center gap-0.5 justify-center mb-0.5">
                                             {dayShifts.slice(0, 3).map((shift, i) => {
                                                 const config = shiftConfig[shift.shiftType?.toLowerCase()] || shiftConfig.middle;
                                                 return (
@@ -141,8 +258,11 @@ export default function CalendarView({ shifts, onDayClick }) {
                                                 );
                                             })}
                                         </div>
-                                        <span className="text-[10px] text-zinc-600 font-medium">
-                                            {totalHours.toFixed(1)}
+                                        <div className="text-[9px] text-purple-700 font-semibold">
+                                            ₪{totalSalary.toFixed(0)}
+                                        </div>
+                                        <span className="text-[9px] text-zinc-500 font-medium">
+                                            {totalHours.toFixed(1)}ש
                                         </span>
                                     </div>
                                 )}

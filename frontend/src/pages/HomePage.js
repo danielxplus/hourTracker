@@ -564,6 +564,7 @@ export default function HomePage() {
                 onClose={() => setIsWeeklyShiftOpen(false)}
                 shiftTypes={shiftTypes}
                 onSave={handleSaveWeeklyShifts}
+                isPremium={user?.isPremium ?? true}
             />
 
             {/* Add Shift Modal */}

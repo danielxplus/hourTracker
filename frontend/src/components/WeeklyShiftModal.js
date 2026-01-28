@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { X, Calendar, Plus } from "lucide-react";
 import dayjs from "dayjs";
+import PremiumLock from "./PremiumLock";
 
-export default function WeeklyShiftModal({ isOpen, onClose, shiftTypes, onSave }) {
+export default function WeeklyShiftModal({ isOpen, onClose, shiftTypes, onSave, isPremium = true }) {
     const [weekShifts, setWeekShifts] = useState([]);
 
     // Initialize 7 days starting from today
@@ -68,7 +69,8 @@ export default function WeeklyShiftModal({ isOpen, onClose, shiftTypes, onSave }
 
     return (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-end justify-center z-50">
-            <div className="bg-white rounded-t-2xl w-full max-w-md px-5 pt-5 pb-8 max-h-[90vh] overflow-y-auto" dir="rtl">
+            <div className="bg-white rounded-t-2xl w-full max-w-md px-5 pt-5 pb-8 max-h-[90vh] overflow-y-auto relative" dir="rtl">
+                {!isPremium && <PremiumLock message="הוספת משמרות שבועיות זמינה למשתמשי פרמיום בלבד" />}
                 <div className="flex items-center justify-between mb-5">
                     <h2 className="text-lg font-medium text-zinc-900">הוספת משמרות לשבוע</h2>
                     <button onClick={onClose} className="p-2 -ml-2 rounded-lg text-zinc-400 hover:text-zinc-600 active:bg-zinc-100">
@@ -107,8 +109,8 @@ export default function WeeklyShiftModal({ isOpen, onClose, shiftTypes, onSave }
                                         key={shift.code}
                                         onClick={() => handleShiftChange(index, shift.code)}
                                         className={`py-2 px-3 rounded-lg text-xs font-medium transition-all ${day.shiftCode === shift.code
-                                                ? 'bg-emerald-600 text-white shadow-sm'
-                                                : 'bg-white text-zinc-700 border border-zinc-200 hover:border-emerald-300'
+                                            ? 'bg-emerald-600 text-white shadow-sm'
+                                            : 'bg-white text-zinc-700 border border-zinc-200 hover:border-emerald-300'
                                             }`}
                                     >
                                         {shift.name}
