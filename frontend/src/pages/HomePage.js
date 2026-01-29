@@ -375,13 +375,13 @@ export default function HomePage() {
             {/* Stats - Bento Grid */}
             <section className="mb-6" dir="rtl">
                 <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2 bg-skin-card-bg rounded-2xl p-5 text-skin-text-primary border border-skin-border-secondary shadow-sm">
-                        <div className="text-xs text-skin-text-tertiary mb-1">משכורת צפויה</div>
-                        <div className="text-3xl font-semibold mb-2">
+                    <div className="col-span-2 bg-skin-accent-primary rounded-2xl p-5 text-skin-text-primary border border-skin-border-secondary shadow-sm">
+                        <div className="text-xs text-skin-text-inverse-light mb-1">משכורת צפויה</div>
+                        <div className="text-3xl font-semibold text-skin-text-inverse mb-2">
                             ₪{(summary?.expectedMonthSalary ?? 0).toFixed(0)}
                         </div>
                         {summary?.totalTips > 0 && (
-                            <div className="text-xs text-skin-text-tertiary">
+                            <div className="text-xs text-skin-text-inverse-light">
                                 לא כולל ₪{summary.totalTips.toFixed(0)} בטיפים
                             </div>
                         )}

@@ -11,7 +11,7 @@ module.exports = {
       colors: {
         primary: {
           DEFAULT: "#7C3AED",
-          soft: "#A855F7",
+          soft: "#9d44ee",
         },
         accent: {
           green: "#10B981",
