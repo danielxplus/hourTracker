@@ -258,7 +258,7 @@ export default function SettingsPage() {
         </div>
       </div>
       <div className="pt-2">
-        <div className="text-center text-italic text-skin-text-primary">
+        <div className="text-center text-xs text-skin-text-secondary">
           לרכישת פרמיום שלחו הודעה ל-0506425121
         </div>
       </div>

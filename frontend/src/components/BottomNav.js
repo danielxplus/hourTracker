@@ -9,7 +9,7 @@ const tabs = [
 
 export default function BottomNav() {
     return (
-        <nav className="fixed bottom-0 inset-x-0 bg-white/80 backdrop-blur-xl border-t border-zinc-200/60">
+        <nav className="fixed bottom-0 inset-x-0 bg-skin-nav-bg backdrop-blur-xl border-t border-skin-border-secondary">
             <div className="max-w-md mx-auto flex justify-around px-4 py-3">
                 {tabs.map((tab) => (
                     <NavLink
@@ -20,15 +20,15 @@ export default function BottomNav() {
                             [
                                 "relative flex flex-col items-center gap-1 px-6 py-2 rounded-xl transition-all duration-200",
                                 isActive
-                                    ? "text-purple-600"
-                                    : "text-zinc-400 hover:text-zinc-600",
+                                    ? "text-skin-accent-primary"
+                                    : "text-skin-text-tertiary hover:text-skin-text-primary",
                             ].join(" ")
                         }
                     >
                         {({ isActive }) => (
                             <>
                                 {isActive && (
-                                    <div className="absolute inset-0 bg-zinc-100 rounded-xl -z-10" />
+                                    <div className="absolute inset-0 bg-skin-bg-secondary rounded-xl -z-10" />
                                 )}
                                 <tab.icon
                                     className={[
@@ -41,8 +41,8 @@ export default function BottomNav() {
                                     "text-xs font-medium transition-all",
                                     isActive ? "opacity-100" : "opacity-80"
                                 ].join(" ")}>
-                  {tab.label}
-                </span>
+                                    {tab.label}
+                                </span>
                             </>
                         )}
                     </NavLink>

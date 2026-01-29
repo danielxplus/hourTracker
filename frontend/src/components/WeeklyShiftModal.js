@@ -124,7 +124,7 @@ export default function WeeklyShiftModal({ isOpen, onClose, shiftTypes, onSave, 
                                             : 'bg-skin-card-bg text-skin-text-secondary border border-skin-border-primary hover:border-skin-accent-primary'
                                             }`}
                                     >
-                                        {shift.name}
+                                        {shift.nameHe || shift.name || shift.code}
                                     </button>
                                 ))}
                             </div>

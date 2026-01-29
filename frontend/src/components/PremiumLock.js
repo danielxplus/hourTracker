@@ -12,9 +12,9 @@ export default function PremiumLock({ message = "תכונה זו זמינה למ
             <p className="text-sm text-skin-text-secondary text-center max-w-xs leading-relaxed">
                 {message}
             </p>
-            <button className="mt-4 px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all active:scale-95">
-                שדרג לפרמיום
-            </button>
+            <p className="text-sm text-skin-text-secondary text-center max-w-xs leading-relaxed">
+                לרכישת פרמיום שלחו הודעה ל-0506425121
+            </p>
         </div>
     );
 }
