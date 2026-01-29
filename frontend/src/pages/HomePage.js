@@ -364,10 +364,10 @@ export default function HomePage() {
     return (
         <Layout>
             <header className="mb-6 pt-2" dir="rtl">
-                <h1 className="text-xl font-medium text-zinc-900 mb-0.5">
+                <h1 className="text-xl font-medium text-skin-text-primary mb-0.5">
                     {greeting}, {userName}
                 </h1>
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-skin-text-tertiary">
                     {new Date().toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" })}
                 </p>
             </header>
@@ -375,26 +375,26 @@ export default function HomePage() {
             {/* Stats - Bento Grid */}
             <section className="mb-6" dir="rtl">
                 <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2 bg-zinc-900 rounded-2xl p-5 text-white">
-                        <div className="text-xs text-zinc-400 mb-1">משכורת צפויה</div>
+                    <div className="col-span-2 bg-skin-card-bg rounded-2xl p-5 text-skin-text-primary border border-skin-border-secondary shadow-sm">
+                        <div className="text-xs text-skin-text-tertiary mb-1">משכורת צפויה</div>
                         <div className="text-3xl font-semibold mb-2">
                             ₪{(summary?.expectedMonthSalary ?? 0).toFixed(0)}
                         </div>
                         {summary?.totalTips > 0 && (
-                            <div className="text-xs text-zinc-400">
+                            <div className="text-xs text-skin-text-tertiary">
                                 לא כולל ₪{summary.totalTips.toFixed(0)} בטיפים
                             </div>
                         )}
                     </div>
-                    <div className="bg-white rounded-2xl border border-zinc-200/60 p-4">
-                        <div className="text-xs text-zinc-500 mb-1">שבועי</div>
-                        <div className="text-2xl font-semibold text-zinc-900">
+                    <div className="bg-skin-card-bg rounded-2xl border border-skin-border-secondary p-4 shadow-sm">
+                        <div className="text-xs text-skin-text-tertiary mb-1">שבועי</div>
+                        <div className="text-2xl font-semibold text-skin-text-primary">
                             {(summary?.weekHours ?? 0).toFixed(1)}
                         </div>
                     </div>
-                    <div className="bg-white rounded-2xl border border-zinc-200/60 p-4">
-                        <div className="text-xs text-zinc-500 mb-1">חודשי</div>
-                        <div className="text-2xl font-semibold text-zinc-900">
+                    <div className="bg-skin-card-bg rounded-2xl border border-skin-border-secondary p-4 shadow-sm">
+                        <div className="text-xs text-skin-text-tertiary mb-1">חודשי</div>
+                        <div className="text-2xl font-semibold text-skin-text-primary">
                             {(summary?.monthHours ?? 0).toFixed(1)}
                         </div>
                     </div>
@@ -403,16 +403,16 @@ export default function HomePage() {
 
             {/* Recent Shifts */}
             <section dir="rtl">
-                <h2 className="text-sm font-medium text-zinc-700 mb-3">משמרות אחרונות</h2>
+                <h2 className="text-sm font-medium text-skin-text-secondary mb-3">משמרות אחרונות</h2>
                 <div className="space-y-2">
                     {isLoading ? (
-                        <div className="text-center py-12 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
-                            <div className="inline-block w-8 h-8 border-3 border-zinc-300 border-t-zinc-600 rounded-full animate-spin mb-2"></div>
-                            <p className="text-sm text-zinc-400">טוען משמרות...</p>
+                        <div className="text-center py-12 bg-skin-bg-secondary rounded-xl border border-dashed border-skin-border-primary">
+                            <div className="inline-block w-8 h-8 border-3 border-skin-border-primary border-t-skin-text-primary rounded-full animate-spin mb-2"></div>
+                            <p className="text-sm text-skin-text-tertiary">טוען משמרות...</p>
                         </div>
                     ) : displayShifts.length === 0 ? (
-                        <div className="text-center py-12 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
-                            <p className="text-sm text-zinc-400">אין משמרות לאחרונה</p>
+                        <div className="text-center py-12 bg-skin-bg-secondary rounded-xl border border-dashed border-skin-border-primary">
+                            <p className="text-sm text-skin-text-tertiary">אין משמרות לאחרונה</p>
                         </div>
                     ) : (
                         displayShifts.map((item) => {
@@ -423,7 +423,7 @@ export default function HomePage() {
                             return (
                                 <div
                                     key={item.id}
-                                    className={`bg-white rounded-xl border p-4 transition-all ${ongoing ? 'border-emerald-300 bg-emerald-50/30 shadow-sm relative z-10' : 'border-zinc-200/60'
+                                    className={`bg-skin-card-bg rounded-xl border p-4 transition-all ${ongoing ? 'border-skin-accent-primary bg-skin-accent-primary-bg shadow-sm relative z-10' : 'border-skin-border-secondary'
                                         }`}
                                 >
                                     <div className="flex items-center gap-3">
@@ -435,7 +435,7 @@ export default function HomePage() {
                                         {/* Content */}
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-0.5">
-                                                <h3 className="text-sm font-medium text-zinc-900 truncate">
+                                                <h3 className="text-sm font-medium text-skin-text-primary truncate">
                                                     {item.shiftType || item.name}
                                                 </h3>
                                                 {ongoing && (
@@ -445,7 +445,7 @@ export default function HomePage() {
                                                     </span>
                                                 )}
                                             </div>
-                                            <p className="text-xs text-zinc-500 truncate">
+                                            <p className="text-xs text-skin-text-tertiary truncate">
                                                 {new Date(item.date).toLocaleDateString("he-IL", { day: 'numeric', month: 'short' })}
                                                 <span className="mx-1.5">•</span>
                                                 {item.hours.toFixed(1)} שעות
@@ -455,11 +455,11 @@ export default function HomePage() {
                                         {/* Actions & Salary */}
                                         <div className="flex items-center gap-2 flex-shrink-0">
                                             <div className="text-right">
-                                                <div className="text-base font-semibold text-zinc-900">
+                                                <div className="text-base font-semibold text-skin-text-primary">
                                                     ₪{(item.salary || 0).toFixed(0)}
                                                 </div>
                                                 {item.tipAmount > 0 && (
-                                                    <div className="text-[10px] text-emerald-600 font-medium">
+                                                    <div className="text-[10px] text-skin-accent-primary font-medium">
                                                         +₪{item.tipAmount}
                                                     </div>
                                                 )}
@@ -472,13 +472,13 @@ export default function HomePage() {
                                                         e.stopPropagation();
                                                         setActiveMenuId(activeMenuId === item.id ? null : item.id);
                                                     }}
-                                                    className="p-2 -ml-2 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 active:bg-zinc-100 transition-colors"
+                                                    className="p-2 -ml-2 rounded-lg text-skin-text-secondary hover:text-skin-text-primary hover:bg-skin-bg-secondary active:bg-skin-bg-primary transition-colors"
                                                 >
                                                     <MoreVertical className="w-4 h-4" />
                                                 </button>
 
                                                 {activeMenuId === item.id && (
-                                                    <div className="absolute left-0 top-9 w-36 bg-white rounded-xl shadow-xl border border-zinc-200/60 overflow-hidden z-20">
+                                                    <div className="absolute left-0 top-9 w-36 bg-skin-card-bg rounded-xl shadow-xl border border-skin-border-secondary overflow-hidden z-20">
                                                         {ongoing && (
                                                             <button
                                                                 onClick={(e) => {
@@ -486,7 +486,7 @@ export default function HomePage() {
                                                                     setActiveMenuId(null);
                                                                     setEndShiftId(item.id);
                                                                 }}
-                                                                className="w-full px-4 py-2.5 text-xs font-medium text-emerald-600 hover:bg-emerald-50 text-right flex items-center justify-end gap-2"
+                                                                className="w-full px-4 py-2.5 text-xs font-medium text-skin-accent-primary hover:bg-skin-accent-primary-bg text-right flex items-center justify-end gap-2"
                                                             >
                                                                 סיים משמרת
                                                                 <Clock className="w-3 h-3" />
@@ -498,7 +498,7 @@ export default function HomePage() {
                                                                 setActiveMenuId(null);
                                                                 handleOpenTip(item.id, item.tipAmount);
                                                             }}
-                                                            className="w-full px-4 py-2.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 text-right flex items-center justify-end gap-2"
+                                                            className="w-full px-4 py-2.5 text-xs font-medium text-skin-text-primary hover:bg-skin-bg-secondary text-right flex items-center justify-end gap-2"
                                                         >
                                                             {item.tipAmount > 0 ? 'ערוך טיפ' : 'הוסף טיפ'}
                                                             <Wallet className="w-3 h-3" />
@@ -508,7 +508,7 @@ export default function HomePage() {
                                                                 e.stopPropagation();
                                                                 handleEditShift(item);
                                                             }}
-                                                            className="w-full px-4 py-2.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 text-right flex items-center justify-end gap-2"
+                                                            className="w-full px-4 py-2.5 text-xs font-medium text-skin-text-primary hover:bg-skin-bg-secondary text-right flex items-center justify-end gap-2"
                                                         >
                                                             עריכה
                                                             <Pencil className="w-3 h-3" />
@@ -541,7 +541,7 @@ export default function HomePage() {
                 {/* Weekly Shift Button */}
                 <button
                     onClick={() => setIsWeeklyShiftOpen(true)}
-                    className="bg-emerald-600 text-white px-4 py-3 rounded-full shadow-lg active:scale-95 transition-transform flex items-center gap-2"
+                    className="bg-skin-accent-secondary text-white px-4 py-3 rounded-full shadow-lg active:scale-95 transition-transform flex items-center gap-2"
                     title="הוספת משמרות לשבוע"
                 >
                     <CalendarDays className="w-5 h-5" />
@@ -551,7 +551,7 @@ export default function HomePage() {
                 {/* Single Shift Button */}
                 <button
                     onClick={handleOpenAdd}
-                    className="bg-zinc-900 text-white p-4 rounded-full shadow-lg active:scale-95 transition-transform"
+                    className="bg-skin-accent-primary text-white p-4 rounded-full shadow-lg active:scale-95 transition-transform"
                     title="הוספת משמרת בודדת"
                 >
                     <Plus className="w-6 h-6" />
@@ -569,13 +569,13 @@ export default function HomePage() {
 
             {/* Add Shift Modal */}
             {isAddOpen && (
-                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-end justify-center z-50">
-                    <div className="bg-white rounded-t-2xl w-full max-w-md px-5 pt-5 pb-8 max-h-[90vh] overflow-y-auto" dir="rtl">
+                <div className="fixed inset-0 bg-skin-modal-overlay backdrop-blur-sm flex items-end justify-center z-50">
+                    <div className="bg-skin-card-bg rounded-t-2xl w-full max-w-md px-5 pt-5 pb-8 max-h-[90vh] overflow-y-auto" dir="rtl">
                         <div className="flex items-center justify-between mb-5">
-                            <h2 className="text-lg font-medium text-zinc-900">
+                            <h2 className="text-lg font-medium text-skin-text-primary">
                                 {editShiftId ? 'עריכת משמרת' : 'משמרת חדשה'}
                             </h2>
-                            <button onClick={closeAddModal} className="p-2 -ml-2 rounded-lg text-zinc-400 hover:text-zinc-600 active:bg-zinc-100">
+                            <button onClick={closeAddModal} className="p-2 -ml-2 rounded-lg text-skin-text-tertiary hover:text-skin-text-primary active:bg-skin-bg-secondary">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
@@ -592,7 +592,7 @@ export default function HomePage() {
                                 }}
                                 dateFormat="dd-MM-yyyy"
                                 wrapperClassName="w-full"
-                                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-3 text-center text-sm font-medium text-zinc-700 focus:outline-none active:bg-zinc-100"
+                                className="w-full bg-skin-bg-secondary border border-skin-border-primary rounded-xl py-3 text-center text-sm font-medium text-skin-text-primary focus:outline-none active:bg-skin-bg-primary"
                             />
                         </div>
 
@@ -616,7 +616,7 @@ export default function HomePage() {
                         <button
                             onClick={handleCreateShift}
                             disabled={!selectedShiftCode || !startTime || !endTime}
-                            className="w-full bg-zinc-900 text-white py-3.5 rounded-xl font-medium disabled:opacity-50 active:scale-95 transition-transform"
+                            className="w-full bg-skin-accent-primary text-white py-3.5 rounded-xl font-medium disabled:opacity-50 active:scale-95 transition-transform"
                         >
                             שמור
                         </button>
@@ -626,16 +626,16 @@ export default function HomePage() {
 
             {/* Tip Modal */}
             {isTipOpen && (
-                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-xs p-5" dir="rtl">
-                        <h3 className="text-lg font-medium text-zinc-900 mb-4 text-center">כמה טיפים?</h3>
+                <div className="fixed inset-0 bg-skin-modal-overlay backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-skin-card-bg rounded-2xl w-full max-w-xs p-5" dir="rtl">
+                        <h3 className="text-lg font-medium text-skin-text-primary mb-4 text-center">כמה טיפים?</h3>
                         <div className="relative mb-4">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 font-medium">₪</span>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-skin-text-tertiary font-medium">₪</span>
                             <input
                                 type="number"
                                 value={tipAmount}
                                 onChange={(e) => setTipAmount(e.target.value)}
-                                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-4 px-4 text-center text-2xl font-semibold text-zinc-900 focus:outline-none"
+                                className="w-full bg-skin-bg-secondary border border-skin-border-primary rounded-xl py-4 px-4 text-center text-2xl font-semibold text-skin-text-primary focus:outline-none"
                                 placeholder="0"
                                 autoFocus
                             />
@@ -643,14 +643,14 @@ export default function HomePage() {
                         <div className="flex gap-2">
                             <button
                                 onClick={() => setIsTipOpen(false)}
-                                className="flex-1 py-3 rounded-xl font-medium text-zinc-600 active:bg-zinc-50"
+                                className="flex-1 py-3 rounded-xl font-medium text-skin-text-secondary active:bg-skin-bg-secondary"
                             >
                                 ביטול
                             </button>
                             <button
                                 onClick={handleAddTip}
                                 disabled={!tipAmount || Number(tipAmount) <= 0}
-                                className="flex-1 bg-zinc-900 text-white py-3 rounded-xl font-medium disabled:opacity-50 active:scale-95 transition-transform"
+                                className="flex-1 bg-skin-accent-primary text-white py-3 rounded-xl font-medium disabled:opacity-50 active:scale-95 transition-transform"
                             >
                                 שמור
                             </button>
@@ -661,14 +661,14 @@ export default function HomePage() {
 
             {/* Delete Confirmation Modal */}
             {deleteShiftId && (
-                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-xs p-6" dir="rtl">
+                <div className="fixed inset-0 bg-skin-modal-overlay backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-skin-card-bg rounded-2xl w-full max-w-xs p-6" dir="rtl">
                         <div className="flex flex-col items-center justify-center text-center mb-6">
                             <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mb-4">
                                 <AlertTriangle className="w-6 h-6 text-red-500" />
                             </div>
-                            <h3 className="text-lg font-semibold text-zinc-900 mb-1">מחיקת משמרת</h3>
-                            <p className="text-sm text-zinc-500">
+                            <h3 className="text-lg font-semibold text-skin-text-primary mb-1">מחיקת משמרת</h3>
+                            <p className="text-sm text-skin-text-secondary">
                                 האם את/ה בטוח/ה שברצונך למחוק את המשמרת? לא ניתן לשחזר פעולה זו.
                             </p>
                         </div>
@@ -676,7 +676,7 @@ export default function HomePage() {
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setDeleteShiftId(null)}
-                                className="flex-1 py-2.5 rounded-xl font-medium text-zinc-700 bg-zinc-50 hover:bg-zinc-100 transition-colors"
+                                className="flex-1 py-2.5 rounded-xl font-medium text-skin-text-primary bg-skin-bg-secondary hover:bg-skin-bg-primary transition-colors"
                             >
                                 ביטול
                             </button>
@@ -693,14 +693,14 @@ export default function HomePage() {
 
             {/* End Shift Modal */}
             {endShiftId && (
-                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-xs p-6" dir="rtl">
+                <div className="fixed inset-0 bg-skin-modal-overlay backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-skin-card-bg rounded-2xl w-full max-w-xs p-6" dir="rtl">
                         <div className="flex flex-col items-center justify-center text-center mb-6">
-                            <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center mb-4">
-                                <Clock className="w-6 h-6 text-emerald-600" />
+                            <div className="w-12 h-12 bg-skin-accent-primary-bg rounded-full flex items-center justify-center mb-4">
+                                <Clock className="w-6 h-6 text-skin-accent-primary" />
                             </div>
-                            <h3 className="text-lg font-semibold text-zinc-900 mb-1">סיום משמרת</h3>
-                            <p className="text-sm text-zinc-500 leading-relaxed">
+                            <h3 className="text-lg font-semibold text-skin-text-primary mb-1">סיום משמרת</h3>
+                            <p className="text-sm text-skin-text-secondary leading-relaxed">
                                 האם ברצונך לסיים את המשמרת כעת?
                                 <br />
                                 שעת הסיום תעודכן לשעה {dayjs().format("HH:mm")}.
@@ -710,13 +710,13 @@ export default function HomePage() {
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setEndShiftId(null)}
-                                className="flex-1 py-2.5 rounded-xl font-medium text-zinc-700 bg-zinc-50 hover:bg-zinc-100 transition-colors"
+                                className="flex-1 py-2.5 rounded-xl font-medium text-skin-text-primary bg-skin-bg-secondary hover:bg-skin-bg-primary transition-colors"
                             >
                                 ביטול
                             </button>
                             <button
                                 onClick={handleEndShift}
-                                className="flex-1 bg-emerald-600 text-white py-2.5 rounded-xl font-medium hover:bg-emerald-700 active:scale-95 transition-all shadow-sm shadow-emerald-200"
+                                className="flex-1 bg-skin-accent-primary text-white py-2.5 rounded-xl font-medium hover:opacity-90 active:scale-95 transition-all shadow-sm"
                             >
                                 סיים משמרת
                             </button>

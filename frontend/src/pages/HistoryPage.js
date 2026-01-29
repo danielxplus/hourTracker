@@ -169,15 +169,15 @@ export default function HistoryPage() {
         <Layout>
             <header className="mb-6 pt-2" dir="rtl">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-xl font-medium text-zinc-900">היסטוריה</h1>
+                    <h1 className="text-xl font-medium text-skin-text-primary">היסטוריה</h1>
 
                     {/* View Toggle */}
-                    <div className="flex gap-1 bg-zinc-100 p-1 rounded-lg">
+                    <div className="flex gap-1 bg-skin-bg-secondary p-1 rounded-lg">
                         <button
                             onClick={() => setViewMode("list")}
                             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === "list"
-                                ? "bg-white shadow-sm text-zinc-900"
-                                : "text-zinc-500 hover:text-zinc-700"
+                                ? "bg-skin-card-bg shadow-sm text-skin-text-primary"
+                                : "text-skin-text-secondary hover:text-skin-text-primary"
                                 }`}
                         >
                             <List className="w-4 h-4" />
@@ -185,8 +185,8 @@ export default function HistoryPage() {
                         <button
                             onClick={() => setViewMode("calendar")}
                             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === "calendar"
-                                ? "bg-white shadow-sm text-zinc-900"
-                                : "text-zinc-500 hover:text-zinc-700"
+                                ? "bg-skin-card-bg shadow-sm text-skin-text-primary"
+                                : "text-skin-text-secondary hover:text-skin-text-primary"
                                 }`}
                         >
                             <Calendar className="w-4 h-4" />
@@ -209,12 +209,12 @@ export default function HistoryPage() {
                 /* List View */
                 <>
                     {/* Filter Tabs */}
-                    <section className="mb-4 flex gap-2 rounded-xl bg-zinc-100 p-1 text-xs" dir="rtl">
+                    <section className="mb-4 flex gap-2 rounded-xl bg-skin-bg-secondary p-1 text-xs" dir="rtl">
                         {['all', 'week', 'month', 'year'].map(f => (
                             <button
                                 key={f}
                                 onClick={() => setFilter(f)}
-                                className={`flex-1 rounded-lg px-3 py-2 font-medium transition-all ${filter === f ? "bg-white shadow-sm text-zinc-900" : "text-zinc-500"
+                                className={`flex-1 rounded-lg px-3 py-2 font-medium transition-all ${filter === f ? "bg-skin-card-bg shadow-sm text-skin-text-primary" : "text-skin-text-secondary"
                                     }`}
                             >
                                 {{ all: 'הכל', week: 'שבוע', month: 'חודש', year: 'שנה' }[f]}
@@ -231,14 +231,14 @@ export default function HistoryPage() {
                             const Icon = config.icon || Clock;
 
                             return (
-                                <div key={item.id} className="bg-white rounded-xl border border-zinc-200/60 p-4 relative">
+                                <div key={item.id} className="bg-skin-card-bg rounded-xl border border-skin-border-secondary p-4 relative">
                                     <div className="flex items-center gap-3">
                                         <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${config.bg} ${config.color} flex-shrink-0`}>
                                             <Icon className="w-5 h-5" />
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-0.5">
-                                                <h3 className="text-sm font-medium text-zinc-900 truncate">
+                                                <h3 className="text-sm font-medium text-skin-text-primary truncate">
                                                     {item.shiftType || "משמרת"}
                                                 </h3>
                                                 {item.overtimeHours > 0 && (
@@ -247,7 +247,7 @@ export default function HistoryPage() {
                                                     </span>
                                                 )}
                                             </div>
-                                            <p className="text-xs text-zinc-500 truncate">
+                                            <p className="text-xs text-skin-text-secondary truncate">
                                                 {new Date(item.date).toLocaleDateString("he-IL", { day: 'numeric', month: 'short' })}
                                                 <span className="mx-1.5">•</span>
                                                 {item.hours?.toFixed(1) || 0} שעות
@@ -255,7 +255,7 @@ export default function HistoryPage() {
                                         </div>
                                         <div className="flex items-center gap-2 flex-shrink-0">
                                             <div className="text-right">
-                                                <div className="text-base font-semibold text-zinc-900">
+                                                <div className="text-base font-semibold text-skin-text-primary">
                                                     ₪{(item.salary || 0).toFixed(0)}
                                                 </div>
                                                 {item.tipAmount > 0 && (
@@ -270,16 +270,16 @@ export default function HistoryPage() {
                                                         e.stopPropagation();
                                                         setActiveMenuId(activeMenuId === item.id ? null : item.id);
                                                     }}
-                                                    className="p-2 -ml-2 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50"
+                                                    className="p-2 -ml-2 rounded-lg text-skin-text-secondary hover:text-skin-text-primary hover:bg-skin-bg-secondary"
                                                 >
                                                     <MoreVertical className="w-4 h-4" />
                                                 </button>
                                                 {activeMenuId === item.id && (
-                                                    <div className="absolute left-0 top-9 w-36 bg-white rounded-xl shadow-xl border border-zinc-200/60 overflow-hidden z-20">
-                                                        <button onClick={(e) => { e.stopPropagation(); handleOpenTip(item.id, item.tipAmount); }} className="w-full px-4 py-2.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 text-right flex items-center justify-end gap-2">
+                                                    <div className="absolute left-0 top-9 w-36 bg-skin-card-bg rounded-xl shadow-xl border border-skin-border-secondary overflow-hidden z-20">
+                                                        <button onClick={(e) => { e.stopPropagation(); handleOpenTip(item.id, item.tipAmount); }} className="w-full px-4 py-2.5 text-xs font-medium text-skin-text-primary hover:bg-skin-bg-secondary text-right flex items-center justify-end gap-2">
                                                             {item.tipAmount > 0 ? 'ערוך טיפ' : 'הוסף טיפ'} <Wallet className="w-3 h-3" />
                                                         </button>
-                                                        <button onClick={(e) => { e.stopPropagation(); handleEditShift(item); }} className="w-full px-4 py-2.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 text-right flex items-center justify-end gap-2">
+                                                        <button onClick={(e) => { e.stopPropagation(); handleEditShift(item); }} className="w-full px-4 py-2.5 text-xs font-medium text-skin-text-primary hover:bg-skin-bg-secondary text-right flex items-center justify-end gap-2">
                                                             עריכה <Pencil className="w-3 h-3" />
                                                         </button>
                                                         <button onClick={(e) => { e.stopPropagation(); handleDeleteShift(item.id); }} className="w-full px-4 py-2.5 text-xs font-medium text-red-600 hover:bg-red-50 text-right flex items-center justify-end gap-2">
@@ -299,11 +299,11 @@ export default function HistoryPage() {
 
             {/* Edit Shift Modal */}
             {isEditOpen && (
-                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-end justify-center z-50">
-                    <div className="bg-white rounded-t-2xl w-full max-w-md px-5 pt-5 pb-8 max-h-[90vh] overflow-y-auto" dir="rtl">
+                <div className="fixed inset-0 bg-skin-modal-overlay backdrop-blur-sm flex items-end justify-center z-50">
+                    <div className="bg-skin-card-bg rounded-t-2xl w-full max-w-md px-5 pt-5 pb-8 max-h-[90vh] overflow-y-auto" dir="rtl">
                         <div className="flex items-center justify-between mb-5">
-                            <h2 className="text-lg font-medium text-zinc-900">עריכת משמרת</h2>
-                            <button onClick={closeModals} className="p-2 -ml-2 rounded-lg text-zinc-400 hover:text-zinc-600 active:bg-zinc-100">
+                            <h2 className="text-lg font-medium text-skin-text-primary">עריכת משמרת</h2>
+                            <button onClick={closeModals} className="p-2 -ml-2 rounded-lg text-skin-text-secondary hover:text-skin-text-primary active:bg-skin-bg-secondary">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
@@ -320,7 +320,7 @@ export default function HistoryPage() {
                                 }}
                                 dateFormat="dd/MM/yyyy"
                                 wrapperClassName="w-full"
-                                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-3 text-center text-sm font-medium text-zinc-700 focus:outline-none"
+                                className="w-full bg-skin-bg-secondary border border-skin-border-primary rounded-xl py-3 text-center text-sm font-medium text-skin-text-primary focus:outline-none"
                             />
                         </div>
 
@@ -342,7 +342,7 @@ export default function HistoryPage() {
                             overtimeRateFromSettings={overtimeRateFromSettings}
                         />
 
-                        <button onClick={handleSaveShift} className="w-full bg-zinc-900 text-white py-3.5 rounded-xl font-medium active:scale-95 transition-transform">
+                        <button onClick={handleSaveShift} className="w-full bg-skin-accent-primary text-white py-3.5 rounded-xl font-medium active:scale-95 transition-transform">
                             שמור שינויים
                         </button>
                     </div>
@@ -351,22 +351,22 @@ export default function HistoryPage() {
 
             {/* Tip Modal */}
             {isTipOpen && (
-                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-xs p-5" dir="rtl">
-                        <h3 className="text-lg font-medium text-zinc-900 mb-4 text-center">עריכת טיפ</h3>
+                <div className="fixed inset-0 bg-skin-modal-overlay backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-skin-card-bg rounded-2xl w-full max-w-xs p-5" dir="rtl">
+                        <h3 className="text-lg font-medium text-skin-text-primary mb-4 text-center">עריכת טיפ</h3>
                         <div className="relative mb-4">
                             <input
                                 type="number"
                                 value={tipAmount}
                                 onChange={(e) => setTipAmount(e.target.value)}
-                                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-4 px-4 text-center text-2xl font-semibold text-zinc-900 focus:outline-none"
+                                className="w-full bg-skin-bg-secondary border border-skin-border-primary rounded-xl py-4 px-4 text-center text-2xl font-semibold text-skin-text-primary focus:outline-none"
                                 placeholder="0"
                                 autoFocus
                             />
                         </div>
                         <div className="flex gap-2">
-                            <button onClick={closeModals} className="flex-1 py-3 rounded-xl font-medium text-zinc-600 bg-zinc-50">ביטול</button>
-                            <button onClick={handleSaveTip} className="flex-1 bg-zinc-900 text-white py-3 rounded-xl font-medium">שמור</button>
+                            <button onClick={closeModals} className="flex-1 py-3 rounded-xl font-medium text-skin-text-secondary bg-skin-bg-secondary">ביטול</button>
+                            <button onClick={handleSaveTip} className="flex-1 bg-skin-accent-primary text-white py-3 rounded-xl font-medium">שמור</button>
                         </div>
                     </div>
                 </div>

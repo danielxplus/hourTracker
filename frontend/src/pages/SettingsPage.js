@@ -100,22 +100,22 @@ export default function SettingsPage() {
   return (
     <Layout>
       <header className="mb-6 pt-2" dir="rtl">
-        <h1 className="text-xl font-medium text-zinc-900">הגדרות</h1>
+        <h1 className="text-xl font-medium text-skin-text-primary">הגדרות</h1>
       </header>
 
       <div className="space-y-3" dir="rtl">
         {/* Display Name */}
-        <div className="bg-white rounded-2xl border border-zinc-200/60 p-4 hover:border-emerald-200 transition-colors">
+        <div className="bg-skin-card-bg rounded-2xl border border-skin-border-secondary p-4 hover:border-skin-accent-primary/30 transition-colors">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0">
-                <User className="w-4 h-4 text-emerald-600" />
+              <div className="w-8 h-8 rounded-full bg-skin-accent-primary-bg flex items-center justify-center flex-shrink-0">
+                <User className="w-4 h-4 text-skin-accent-primary" />
               </div>
               <input
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="flex-1 bg-transparent text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none"
+                className="flex-1 bg-transparent text-sm text-skin-text-primary placeholder:text-skin-text-tertiary focus:outline-none"
                 placeholder="שם תצוגה"
               />
             </div>
@@ -123,7 +123,7 @@ export default function SettingsPage() {
               type="button"
               onClick={handleSaveName}
               disabled={isSaving || !displayName.trim()}
-              className="px-3.5 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium disabled:opacity-50 hover:bg-emerald-700 transition-colors flex-shrink-0 shadow-sm"
+              className="px-3.5 py-1.5 rounded-lg bg-skin-accent-primary text-white text-xs font-medium disabled:opacity-50 hover:opacity-90 transition-colors flex-shrink-0 shadow-sm"
             >
               {savedSection === "name" ? <Check className="w-3.5 h-3.5" /> : "שמור"}
             </button>
@@ -131,11 +131,11 @@ export default function SettingsPage() {
         </div>
 
         {/* Rates Section */}
-        <div className="bg-white rounded-2xl border border-zinc-200/60 divide-y divide-zinc-100">
-          <div className="p-4 hover:bg-emerald-50/30 transition-colors">
+        <div className="bg-skin-card-bg rounded-2xl border border-skin-border-secondary divide-y divide-skin-border-secondary">
+          <div className="p-4 hover:bg-skin-bg-secondary transition-colors">
             <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 text-sm text-zinc-700">
-                <Banknote className="w-4 h-4 text-emerald-600" />
+              <div className="flex items-center gap-2.5 text-sm text-skin-text-secondary">
+                <Banknote className="w-4 h-4 text-skin-accent-primary" />
                 <span>שכר שעתי</span>
               </div>
               <div className="flex items-center gap-2">
@@ -143,17 +143,17 @@ export default function SettingsPage() {
                   type="number"
                   value={hourlyRate}
                   onChange={handleRateChange}
-                  className="w-24 text-sm text-left bg-zinc-50 rounded-lg px-3 py-2 border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all"
+                  className="w-24 text-sm text-left bg-skin-bg-secondary rounded-lg px-3 py-2 border border-skin-border-secondary focus:outline-none focus:ring-2 focus:ring-skin-accent-primary/20 focus:border-skin-accent-primary transition-all text-skin-text-primary"
                 />
-                <span className="text-xs text-zinc-400 font-medium">₪</span>
+                <span className="text-xs text-skin-text-tertiary font-medium">₪</span>
               </div>
             </div>
           </div>
 
-          <div className="p-4 hover:bg-emerald-50/30 transition-colors">
+          <div className="p-4 hover:bg-skin-bg-secondary transition-colors">
             <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 text-sm text-zinc-700">
-                <Banknote className="w-4 h-4 text-emerald-600" />
+              <div className="flex items-center gap-2.5 text-sm text-skin-text-secondary">
+                <Banknote className="w-4 h-4 text-skin-accent-primary" />
                 <span>שעות נוספות</span>
               </div>
               <div className="flex items-center gap-2">
@@ -162,17 +162,17 @@ export default function SettingsPage() {
                   step="0.1"
                   value={overtimeHourlyRate}
                   onChange={(e) => setOvertimeHourlyRate(e.target.value)}
-                  className="w-24 text-sm text-left bg-zinc-50 rounded-lg px-3 py-2 border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all"
+                  className="w-24 text-sm text-left bg-skin-bg-secondary rounded-lg px-3 py-2 border border-skin-border-secondary focus:outline-none focus:ring-2 focus:ring-skin-accent-primary/20 focus:border-skin-accent-primary transition-all text-skin-text-primary"
                 />
-                <span className="text-xs text-zinc-400 font-medium">₪</span>
+                <span className="text-xs text-skin-text-tertiary font-medium">₪</span>
               </div>
             </div>
           </div>
 
-          <div className="p-4 hover:bg-emerald-50/30 transition-colors">
+          <div className="p-4 hover:bg-skin-bg-secondary transition-colors">
             <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 text-sm text-zinc-700">
-                <Banknote className="w-4 h-4 text-emerald-600" />
+              <div className="flex items-center gap-2.5 text-sm text-skin-text-secondary">
+                <Banknote className="w-4 h-4 text-skin-accent-primary" />
                 <span>שכר שבת (150%)</span>
               </div>
               <div className="flex items-center gap-2">
@@ -181,50 +181,52 @@ export default function SettingsPage() {
                   step="0.1"
                   value={shabatHourlyRate}
                   onChange={(e) => setShabatHourlyRate(e.target.value)}
-                  className="w-24 text-sm text-left bg-zinc-50 rounded-lg px-3 py-2 border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all"
+                  className="w-24 text-sm text-left bg-skin-bg-secondary rounded-lg px-3 py-2 border border-skin-border-secondary focus:outline-none focus:ring-2 focus:ring-skin-accent-primary/20 focus:border-skin-accent-primary transition-all text-skin-text-primary"
                 />
-                <span className="text-xs text-zinc-400 font-medium">₪</span>
+                <span className="text-xs text-skin-text-tertiary font-medium">₪</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Theme Selection */}
-        <div className="bg-white rounded-2xl border border-zinc-200/60 p-4">
+        <div className="bg-skin-card-bg rounded-2xl border border-skin-border-secondary p-4 relative overflow-hidden">
+          {!isPremium && <PremiumLock message="התאמה אישית של ערכת הנושא זמינה למשתמשי פרמיום בלבד" />}
           <div className="flex items-center gap-2 mb-4">
-            <Palette className="w-5 h-5 text-emerald-600" />
-            <h3 className="text-sm font-medium text-zinc-900">ערכת נושא</h3>
+            <Palette className="w-5 h-5 text-skin-accent-primary" />
+            <h3 className="text-sm font-medium text-skin-text-primary">ערכת נושא</h3>
           </div>
           <div className="grid grid-cols-2 gap-3">
             {Object.entries(themes).map(([key, theme]) => (
               <button
                 key={key}
                 onClick={() => updateTheme(key)}
+                disabled={!isPremium && key !== 'default'}
                 className={`relative p-3 rounded-xl border-2 transition-all ${currentTheme === key
-                  ? 'border-emerald-500 bg-emerald-50'
-                  : 'border-zinc-200 hover:border-zinc-300'
+                  ? 'border-skin-accent-primary bg-skin-accent-primary-bg'
+                  : 'border-skin-border-primary hover:border-skin-border-secondary'
                   }`}
               >
                 <div className="flex flex-col items-start gap-2">
                   <div className="flex items-center gap-2 w-full">
-                    <div className="text-sm font-medium text-zinc-900">{theme.name}</div>
+                    <div className="text-sm font-medium text-skin-text-primary">{theme.name}</div>
                     {currentTheme === key && (
-                      <Check className="w-4 h-4 text-emerald-600 mr-auto" />
+                      <Check className="w-4 h-4 text-skin-accent-primary mr-auto" />
                     )}
                   </div>
-                  <div className="text-xs text-zinc-500 text-right">{theme.description}</div>
+                  <div className="text-xs text-skin-text-secondary text-right">{theme.description}</div>
                   {/* Theme preview */}
                   <div className="flex gap-1 mt-1">
                     <div
-                      className="w-6 h-6 rounded border border-zinc-200"
+                      className="w-6 h-6 rounded border border-skin-border-primary"
                       style={{ backgroundColor: theme.vars['--bg-primary'] }}
                     />
                     <div
-                      className="w-6 h-6 rounded border border-zinc-200"
+                      className="w-6 h-6 rounded border border-skin-border-primary"
                       style={{ backgroundColor: theme.vars['--accent-primary'] }}
                     />
                     <div
-                      className="w-6 h-6 rounded border border-zinc-200"
+                      className="w-6 h-6 rounded border border-skin-border-primary"
                       style={{ backgroundColor: theme.vars['--accent-secondary'] }}
                     />
                   </div>
@@ -238,7 +240,7 @@ export default function SettingsPage() {
           type="button"
           onClick={handleSaveSalary}
           disabled={isSaving}
-          className="w-full rounded-xl bg-zinc-900 text-white py-3 text-sm font-medium shadow-sm disabled:opacity-50 hover:bg-emerald-700 transition-all active:scale-95"
+          className="w-full rounded-xl bg-skin-accent-primary text-white py-3 text-sm font-medium shadow-sm disabled:opacity-50 hover:opacity-90 transition-all active:scale-95"
         >
           {savedSection === "salary" ? "נשמר ✓" : "שמור שינויים"}
         </button>
@@ -247,29 +249,34 @@ export default function SettingsPage() {
           <button
             type="button"
             onClick={() => setShowLogoutModal(true)}
-            className="w-full rounded-xl border border-zinc-200 bg-white text-zinc-600 py-3 text-sm font-medium hover:bg-zinc-50 hover:border-zinc-300 transition-colors flex items-center justify-center gap-2"
+            className="w-full rounded-xl border border-skin-border-secondary bg-skin-card-bg text-skin-text-secondary py-3 text-sm font-medium hover:bg-skin-bg-secondary hover:border-skin-border-primary transition-colors flex items-center justify-center gap-2"
           >
             <LogOut className="w-4 h-4" />
             התנתק
           </button>
         </div>
       </div>
+      <div className="pt-2">
+        <div className="text-center text-italic text-skin-text-primary">
+          לרכישת פרמיום שלחו הודעה ל-0506425121
+        </div>
+      </div>
 
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowLogoutModal(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-xs p-5" dir="rtl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-skin-modal-overlay backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowLogoutModal(false)}>
+          <div className="bg-skin-card-bg rounded-2xl w-full max-w-xs p-5" dir="rtl" onClick={(e) => e.stopPropagation()}>
             <div className="text-center mb-5">
               <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-3">
                 <LogOut className="w-6 h-6 text-red-600" />
               </div>
-              <h3 className="text-lg font-semibold text-zinc-900 mb-1">התנתקות מהמערכת</h3>
-              <p className="text-sm text-zinc-500">האם את/ה בטוח/ה שברצונך להתנתק?</p>
+              <h3 className="text-lg font-semibold text-skin-text-primary mb-1">התנתקות מהמערכת</h3>
+              <p className="text-sm text-skin-text-secondary">האם את/ה בטוח/ה שברצונך להתנתק?</p>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={() => setShowLogoutModal(false)}
-                className="flex-1 py-3 rounded-xl font-medium text-zinc-600 hover:bg-zinc-50 transition-colors"
+                className="flex-1 py-3 rounded-xl font-medium text-skin-text-secondary hover:bg-skin-bg-secondary transition-colors"
               >
                 ביטול
               </button>
