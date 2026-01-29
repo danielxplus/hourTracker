@@ -94,14 +94,15 @@ public class ShiftService {
         // Preserve existing manual overtime if any
         Map<String, Object> payload = Map.of(
                 "overtimeHours", existing.getOvertimeHours() != null ? existing.getOvertimeHours() : 0,
-                "overtimeHourlyRate", existing.getOvertimeHourlyRate() != null ? existing.getOvertimeHourlyRate() : 0
-        );
+                "overtimeHourlyRate", existing.getOvertimeHourlyRate() != null ? existing.getOvertimeHourlyRate() : 0);
 
-        return saveShiftWithCalculations(userId, existing.getDate(), existing.getStartTime().toString(), nowTime, type, payload, existing.getId());
+        return saveShiftWithCalculations(userId, existing.getDate(), existing.getStartTime().toString(), nowTime, type,
+                payload, existing.getId());
     }
 
-    private Shift saveShiftWithCalculations(String userId, LocalDate date, String startStr, String endStr, ShiftType type,
-                                            Map<String, Object> payload, Long existingId) {
+    private Shift saveShiftWithCalculations(String userId, LocalDate date, String startStr, String endStr,
+            ShiftType type,
+            Map<String, Object> payload, Long existingId) {
 
         // 1. Prepare Times
         LocalTime startTime = LocalTime.parse(startStr);
@@ -122,13 +123,16 @@ public class ShiftService {
         int deductionMinutes = (type.getUnpaidBreakMinutes() != null) ? type.getUnpaidBreakMinutes() : 0;
 
         // 4. Calculate Net Hours (Gross - Break)
-        // Math.max ensures we don't get negative numbers if a shift is shorter than the break
+        // Math.max ensures we don't get negative numbers if a shift is shorter than the
+        // break
         double netMinutes = Math.max(0, grossMinutes - deductionMinutes);
         double hours = netMinutes / 60.0;
 
         // 5. Get User Rate
         UserSettings settings = userSettingsRepository.findByUserId(userId).orElse(null);
-        double rate = (settings != null && settings.getHourlyRate() != null) ? settings.getHourlyRate() : 51.0;
+        double rate = (settings != null && settings.getHourlyRate() != null && settings.getHourlyRate() > 0)
+                ? settings.getHourlyRate()
+                : 51.0;
 
         // 6. Calculate Base Salary (Using WageCalculator for Shabbat Logic)
         double baseSalary = wageCalculator.calculateShiftSalary(startDt, endDt, rate);
@@ -139,7 +143,8 @@ public class ShiftService {
         Double overtimeSalary = 0.0;
 
         Object overtimeHoursVal = payload.get("overtimeHours");
-        if (overtimeHoursVal instanceof Number n) overtimeHours = n.doubleValue();
+        if (overtimeHoursVal instanceof Number n)
+            overtimeHours = n.doubleValue();
 
         if (overtimeHours != null && overtimeHours > 0) {
             Object overtimeRateVal = payload.get("overtimeHourlyRate");

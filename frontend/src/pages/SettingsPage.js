@@ -240,7 +240,7 @@ export default function SettingsPage() {
         <button
           type="button"
           onClick={handleSaveSalary}
-          disabled={isSaving}
+          disabled={isSaving || Number(hourlyRate) <= 0}
           className="w-full rounded-xl bg-skin-accent-primary text-white py-3 text-sm font-medium shadow-sm disabled:opacity-50 hover:opacity-90 transition-all active:scale-95"
         >
           {savedSection === "salary" ? "נשמר ✓" : "שמור שינויים"}

@@ -227,17 +227,7 @@ export default function CalendarView({ shifts, onDayClick, isPremium = true }) {
                                 </span>
                                 {hasShifts && (
                                     <div className="mt-0.5">
-                                        <div className="flex items-center gap-0.5 justify-center mb-0.5">
-                                            {dayShifts.slice(0, 3).map((shift, i) => {
-                                                const config = shiftConfig[shift.shiftType?.toLowerCase()] || shiftConfig.middle;
-                                                return (
-                                                    <div
-                                                        key={i}
-                                                        className={`w-1.5 h-1.5 rounded-full ${config.bg}`}
-                                                    />
-                                                );
-                                            })}
-                                        </div>
+
                                         <div className="text-[9px] text-skin-accent-secondary font-semibold">
                                             ₪{totalSalary.toFixed(0)}
                                         </div>
