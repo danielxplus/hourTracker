@@ -4,6 +4,7 @@ import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import api from "../api/client";
+import PremiumLock from '../components/PremiumLock';
 
 export default function SettingsPage() {
   const { user, refreshUser, logout } = useAuth();
