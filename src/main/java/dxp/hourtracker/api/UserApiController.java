@@ -72,11 +72,20 @@ public class UserApiController {
         // Add settings info (isPremium and theme)
         UserSettings settings = userSettingsRepository.findByUserId(externalId).orElse(null);
         if (settings != null) {
-            response.put("isPremium", settings.getIsPremium() != null ? settings.getIsPremium() : true);
+            response.put("isPremium", settings.getIsPremium());
             response.put("themePreference",
                     settings.getThemePreference() != null ? settings.getThemePreference() : "default");
         } else {
-            response.put("isPremium", true);
+            // New user or no settings?
+            // If new user, they are NOT premium by default now? Or do we want to give them
+            // trial?
+            // Let's assume false for consistency, or true if that was the old default.
+            // Old default was "true". But for "amount of premium days" model, users likely
+            // need to buy.
+            // Let's go with FALSE for new users unless decided otherwise.
+            // Actually, the user said "purchasing premium will grant 30 days", implying
+            // default might be 0.
+            response.put("isPremium", false);
             response.put("themePreference", "default");
         }
 
@@ -194,8 +203,8 @@ public class UserApiController {
                     s.setHourlyRate(defaultBase);
                     s.setOvertimeHourlyRate(defaultBase * 1.25);
                     s.setShabatHourlyRate(defaultBase * 1.50);
-                    s.setIsPremium(true);
-                    s.setThemePreference("default");
+                    // s.setIsPremium(true); // Don't set true by default anymore, or set a trial
+                    // period
                     return userSettingsRepository.save(s);
                 });
 
@@ -216,7 +225,7 @@ public class UserApiController {
         response.put("hourlyRate", currentRate);
         response.put("overtimeHourlyRate", currentOvertime);
         response.put("shabatHourlyRate", currentShabat);
-        response.put("isPremium", settings.getIsPremium() != null ? settings.getIsPremium() : true);
+        response.put("isPremium", settings.getIsPremium());
         response.put("themePreference",
                 settings.getThemePreference() != null ? settings.getThemePreference() : "default");
         return response;
@@ -274,7 +283,7 @@ public class UserApiController {
                 .orElseGet(() -> {
                     UserSettings s = new UserSettings();
                     s.setUserId(userId);
-                    s.setIsPremium(true);
+                    // s.setIsPremium(true);
                     return s;
                 });
         settings.setHourlyRate(hourlyRate);
@@ -287,6 +296,45 @@ public class UserApiController {
         response.put("overtimeHourlyRate", settings.getOvertimeHourlyRate());
         response.put("shabatHourlyRate", settings.getShabatHourlyRate());
         response.put("themePreference", settings.getThemePreference());
+        return response;
+    }
+
+    @PostMapping("/settings/add-premium")
+    public Map<String, Object> addPremiumDays(
+            @AuthenticationPrincipal OAuth2User principal,
+            @RequestBody Map<String, Object> body) {
+
+        Map<String, Object> response = new HashMap<>();
+        if (principal == null)
+            return response;
+
+        String userId = principal.getName();
+        Integer daysToAdd = (Integer) body.get("days");
+        if (daysToAdd == null || daysToAdd <= 0) {
+            daysToAdd = 30; // default
+        }
+
+        UserSettings settings = userSettingsRepository.findByUserId(userId)
+                .orElseGet(() -> {
+                    UserSettings s = new UserSettings();
+                    s.setUserId(userId);
+                    s.setHourlyRate(51.0);
+                    return userSettingsRepository.save(s);
+                });
+
+        java.time.LocalDateTime currentExpiry = settings.getPremiumExpiresAt();
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+
+        if (currentExpiry == null || currentExpiry.isBefore(now)) {
+            settings.setPremiumExpiresAt(now.plusDays(daysToAdd));
+        } else {
+            settings.setPremiumExpiresAt(currentExpiry.plusDays(daysToAdd));
+        }
+
+        userSettingsRepository.save(settings);
+
+        response.put("isPremium", settings.getIsPremium());
+        response.put("premiumExpiresAt", settings.getPremiumExpiresAt());
         return response;
     }
 
