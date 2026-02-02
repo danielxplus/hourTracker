@@ -121,12 +121,12 @@ public class UserApiController {
                         return userSettingsRepository.save(s);
                     });
 
-            // --- Monthly Calculation (Start from 1st of month at 06:30) ---
+            // --- Monthly Calculation (Start from 1st of month at 06:29) ---
             YearMonth thisMonth = YearMonth.now();
             LocalDate startOfMonthDate = thisMonth.atDay(1);
             LocalDate endOfMonthDate = thisMonth.atEndOfMonth();
             LocalDateTime boundaryMonth = LocalDateTime.of(startOfMonthDate,
-                    LocalTime.of(6, 30));
+                    LocalTime.of(6, 29));
 
             // Fetch roughly by date range first
             List<Shift> monthShiftsCandidates = shiftRepository.findByUserIdAndDateBetweenOrderByDateDesc(
@@ -154,13 +154,13 @@ public class UserApiController {
                     .mapToDouble(s -> (s.getHours() != null ? s.getHours() : 0.0))
                     .sum();
 
-            // --- Weekly Calculation (Start from most recent Sunday at 06:30) ---
+            // --- Weekly Calculation (Start from most recent Sunday at 06:29) ---
             LocalDate today = LocalDate.now();
             // Find most recent Sunday (or today if today is Sunday)
             LocalDate previousSunday = today
                     .with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
             LocalDateTime boundaryWeek = LocalDateTime.of(previousSunday,
-                    LocalTime.of(6, 30));
+                    LocalTime.of(6, 29));
 
             List<Shift> weekShifts = shiftRepository.findByUserIdAndDateBetweenOrderByDateDesc(
                     userId, previousSunday, today);

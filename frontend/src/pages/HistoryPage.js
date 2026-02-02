@@ -164,21 +164,26 @@ export default function HistoryPage() {
         let cutoff = null;
 
         if (filter === "week") {
-            // Most recent Sunday at 06:30
-            cutoff = now.day(0).hour(6).minute(30).second(0).millisecond(0);
+            // Most recent Sunday at 06:29 (to include 06:30 shifts safely)
+            cutoff = now.day(0).hour(6).minute(29).second(0).millisecond(0);
         } else if (filter === "month") {
-            // 1st of current month at 06:30
-            cutoff = now.date(1).hour(6).minute(30).second(0).millisecond(0);
+            // 1st of current month at 06:29
+            cutoff = now.date(1).hour(6).minute(29).second(0).millisecond(0);
         } else if (filter === "year") {
-            // Jan 1st of current year at 06:30
-            cutoff = now.month(0).date(1).hour(6).minute(30).second(0).millisecond(0);
+            // Jan 1st of current year at 06:29
+            cutoff = now.month(0).date(1).hour(6).minute(29).second(0).millisecond(0);
         }
+
+        console.log("Filter:", filter, "Cutoff:", cutoff ? cutoff.format() : "None");
 
         return items.filter((item) => {
             const dateStr = item.date; // YYYY-MM-DD
-            // Use startTime if available, else default to 00:00 (though shifts should have time)
             const timeStr = item.startTime ? item.startTime.slice(0, 5) : "00:00";
             const itemDateTime = dayjs(`${dateStr}T${timeStr}`);
+
+            if (filter !== "all") {
+                // console.log(`Item: ${dateStr} ${timeStr}`, itemDateTime.format(), " >= ", cutoff.format(), "?", itemDateTime.isAfter(cutoff) || itemDateTime.isSame(cutoff));
+            }
 
             return itemDateTime.isAfter(cutoff) || itemDateTime.isSame(cutoff);
         });
