@@ -270,62 +270,62 @@ export default function SettingsPage() {
             className="w-full rounded-xl border border-skin-border-secondary bg-skin-card-bg text-skin-text-secondary py-3 text-sm font-medium hover:bg-skin-bg-secondary hover:border-skin-border-primary transition-colors flex items-center justify-center gap-2"
           >
             <LogOut className="w-4 h-4" />
-            התנתק
           </button>
         </div>
-        <div className="pt-2">
-          <div className="text-center text-xs text-skin-text-secondary">
-            {isPremium && premiumExpiresAt ? (
-              <div className="mb-2">
-                משתמש פרמיום בתוקף עד: {new Date(premiumExpiresAt).toLocaleDateString('he-IL')}
-              </div>
-            ) : (
-              <div className="mb-2">משתמש חינמי</div>
-            )}
+      </div>
+      <div className="pt-2">
+        <div className="text-center text-xs text-skin-text-secondary">
+          {isPremium && premiumExpiresAt ? (
+            <div className="mb-2">
+              משתמש פרמיום בתוקף עד: {new Date(premiumExpiresAt).toLocaleDateString('he-IL')}
+            </div>
+          ) : (
+            <div className="mb-2">משתמש חינמי</div>
+          )}
 
-            <div className="flex flex-col gap-2 items-center">
-              <div>לרכישת פרמיום שלחו הודעה ל-0506425121</div>
-              {/* Dev/Demo button to add premium days */}
+          <div className="flex flex-col gap-2 items-center">
+            <div>לרכישת פרמיום שלחו הודעה ל-0506425121</div>
+            {/* Dev/Demo button to add premium days */}
+            <button
+              type="button"
+              onClick={handleAddPremiumDays}
+              disabled={isSaving}
+              className="text-xs text-skin-accent-primary underline hover:text-skin-accent-secondary"
+            >
+              (סימולציה) הוסף 30 ימי פרמיום
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-skin-modal-overlay backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowLogoutModal(false)}>
+          <div className="bg-skin-card-bg rounded-2xl w-full max-w-xs p-5" dir="rtl" onClick={(e) => e.stopPropagation()}>
+            <div className="text-center mb-5">
+              <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-3">
+                <LogOut className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-skin-text-primary mb-1">התנתקות מהמערכת</h3>
+              <p className="text-sm text-skin-text-secondary">האם את/ה בטוח/ה שברצונך להתנתק?</p>
+            </div>
+            <div className="flex gap-2">
               <button
-                type="button"
-                onClick={handleAddPremiumDays}
-                disabled={isSaving}
-                className="text-xs text-skin-accent-primary underline hover:text-skin-accent-secondary"
+                onClick={() => setShowLogoutModal(false)}
+                className="flex-1 py-3 rounded-xl font-medium text-skin-text-secondary hover:bg-skin-bg-secondary transition-colors"
               >
-                (סימולציה) הוסף 30 ימי פרמיום
+                ביטול
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex-1 bg-red-600 text-white py-3 rounded-xl font-medium hover:bg-red-700 active:scale-95 transition-all"
+              >
+                התנתק
               </button>
             </div>
           </div>
         </div>
-
-        {/* Logout Confirmation Modal */}
-        {showLogoutModal && (
-          <div className="fixed inset-0 bg-skin-modal-overlay backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowLogoutModal(false)}>
-            <div className="bg-skin-card-bg rounded-2xl w-full max-w-xs p-5" dir="rtl" onClick={(e) => e.stopPropagation()}>
-              <div className="text-center mb-5">
-                <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-3">
-                  <LogOut className="w-6 h-6 text-red-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-skin-text-primary mb-1">התנתקות מהמערכת</h3>
-                <p className="text-sm text-skin-text-secondary">האם את/ה בטוח/ה שברצונך להתנתק?</p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowLogoutModal(false)}
-                  className="flex-1 py-3 rounded-xl font-medium text-skin-text-secondary hover:bg-skin-bg-secondary transition-colors"
-                >
-                  ביטול
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="flex-1 bg-red-600 text-white py-3 rounded-xl font-medium hover:bg-red-700 active:scale-95 transition-all"
-                >
-                  התנתק
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+      )}
     </Layout>
   );
 }
