@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import dayjs from "dayjs";
 import { Clock, MoreVertical, Wallet, Pencil, Trash2, X, List, Calendar } from "lucide-react";
 import Layout from "../components/Layout";
 import ShiftForm from "../components/ShiftForm";
@@ -155,15 +156,33 @@ export default function HistoryPage() {
     };
 
     // --- Filtering ---
-    const filteredItems = items.filter((item) => {
-        const itemDate = new Date(item.date);
-        const now = new Date();
-        if (filter === "all") return true;
-        if (filter === "week") return itemDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        if (filter === "month") return itemDate >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        if (filter === "year") return itemDate >= new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-        return true;
-    });
+    // --- Filtering ---
+    const filteredItems = useMemo(() => {
+        if (filter === "all") return items;
+
+        const now = dayjs();
+        let cutoff = null;
+
+        if (filter === "week") {
+            // Most recent Sunday at 06:30
+            cutoff = now.day(0).hour(6).minute(30).second(0).millisecond(0);
+        } else if (filter === "month") {
+            // 1st of current month at 06:30
+            cutoff = now.date(1).hour(6).minute(30).second(0).millisecond(0);
+        } else if (filter === "year") {
+            // Jan 1st of current year at 06:30
+            cutoff = now.month(0).date(1).hour(6).minute(30).second(0).millisecond(0);
+        }
+
+        return items.filter((item) => {
+            const dateStr = item.date; // YYYY-MM-DD
+            // Use startTime if available, else default to 00:00 (though shifts should have time)
+            const timeStr = item.startTime ? item.startTime.slice(0, 5) : "00:00";
+            const itemDateTime = dayjs(`${dateStr}T${timeStr}`);
+
+            return itemDateTime.isAfter(cutoff) || itemDateTime.isSame(cutoff);
+        });
+    }, [items, filter]);
 
     return (
         <Layout>

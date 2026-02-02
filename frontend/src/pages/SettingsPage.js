@@ -275,16 +275,21 @@ export default function SettingsPage() {
       </div>
       <div className="pt-2">
         <div className="text-center text-xs text-skin-text-secondary">
-          {isPremium && premiumExpiresAt ? (
-            <div className="mb-2">
-              משתמש פרמיום בתוקף עד: {new Date(premiumExpiresAt).toLocaleDateString('he-IL')}
-            </div>
+          {isPremium ? (
+            premiumExpiresAt && (
+              <div className="mb-2">
+                משתמש פרמיום בתוקף עד: {new Date(premiumExpiresAt).toLocaleDateString('he-IL')}
+              </div>
+            )
           ) : (
             <div className="mb-2">משתמש חינמי</div>
           )}
 
           <div className="flex flex-col gap-2 items-center">
-            <div>לרכישת פרמיום שלחו הודעה ל-0506425121</div>
+            {!isPremium && (
+              <div>לרכישת פרמיום שלחו הודעה ל-0506425121</div>
+            )}
+
             {/* Dev/Demo button to add premium days */}
             <button
               type="button"

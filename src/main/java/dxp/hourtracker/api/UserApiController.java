@@ -17,7 +17,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.YearMonth;
+import java.time.DayOfWeek;
+import java.time.temporal.TemporalAdjusters;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -117,33 +121,80 @@ public class UserApiController {
                         return userSettingsRepository.save(s);
                     });
 
+            // --- Monthly Calculation (Start from 1st of month at 06:30) ---
             YearMonth thisMonth = YearMonth.now();
-            LocalDate startOfMonth = thisMonth.atDay(1);
-            LocalDate endOfMonth = thisMonth.atEndOfMonth();
+            LocalDate startOfMonthDate = thisMonth.atDay(1);
+            LocalDate endOfMonthDate = thisMonth.atEndOfMonth();
+            LocalDateTime boundaryMonth = LocalDateTime.of(startOfMonthDate,
+                    LocalTime.of(6, 30));
+
+            // Fetch roughly by date range first
+            List<Shift> monthShiftsCandidates = shiftRepository.findByUserIdAndDateBetweenOrderByDateDesc(
+                    userId, startOfMonthDate.minusDays(1), endOfMonthDate);
+            // Note: minusDays(1) because a shift on the 1st ending *after* 6:30 might
+            // technically belong?
+            // Actually, if date is 1st, startTime >= 06:30.
+
+            // Re-fetch strictly by date range [1st, End] is usually enough if date
+            // represents "shift date".
+            // But let's stick to the requested logic: count from X time.
+            // If shift date is BEFORE cutoff, we ignore. If shift date is defined as "start
+            // date",
+            // we just need date >= 1st. AND if date == 1st, startTime >= 06:30.
 
             List<Shift> monthShifts = shiftRepository.findByUserIdAndDateBetweenOrderByDateDesc(
-                    userId, startOfMonth, endOfMonth);
+                    userId, startOfMonthDate, endOfMonthDate);
 
             double monthHours = monthShifts.stream()
+                    .filter(s -> {
+                        LocalDateTime shiftStart = LocalDateTime.of(s.getDate(),
+                                s.getStartTime() != null ? s.getStartTime() : LocalTime.MIN);
+                        return !shiftStart.isBefore(boundaryMonth);
+                    })
                     .mapToDouble(s -> (s.getHours() != null ? s.getHours() : 0.0))
                     .sum();
 
-            LocalDate weekAgo = LocalDate.now().minusDays(7);
+            // --- Weekly Calculation (Start from most recent Sunday at 06:30) ---
+            LocalDate today = LocalDate.now();
+            // Find most recent Sunday (or today if today is Sunday)
+            LocalDate previousSunday = today
+                    .with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
+            LocalDateTime boundaryWeek = LocalDateTime.of(previousSunday,
+                    LocalTime.of(6, 30));
+
             List<Shift> weekShifts = shiftRepository.findByUserIdAndDateBetweenOrderByDateDesc(
-                    userId, weekAgo, LocalDate.now());
+                    userId, previousSunday, today);
 
             double weekHours = weekShifts.stream()
+                    .filter(s -> {
+                        LocalDateTime shiftStart = LocalDateTime.of(s.getDate(),
+                                s.getStartTime() != null ? s.getStartTime() : LocalTime.MIN);
+                        return !shiftStart.isBefore(boundaryWeek);
+                    })
                     .mapToDouble(s -> (s.getHours() != null ? s.getHours() : 0.0))
                     .sum();
 
-            double hourlyRate = settings.getHourlyRate() != null ? settings.getHourlyRate() : 0.0;
+            // Calculate expected salary based on the MONTHLY specific shifts (filtered)
+            // Or should expected salary match the "Month Hours"? Yes, consistent.
             double expectedSalary = monthShifts.stream()
+                    .filter(s -> {
+                        LocalDateTime shiftStart = LocalDateTime.of(s.getDate(),
+                                s.getStartTime() != null ? s.getStartTime() : LocalTime.MIN);
+                        return !shiftStart.isBefore(boundaryMonth);
+                    })
                     .mapToDouble(s -> (s.getSalary() != null ? s.getSalary() : 0.0))
                     .sum();
 
             double totalTips = monthShifts.stream()
+                    .filter(s -> {
+                        LocalDateTime shiftStart = LocalDateTime.of(s.getDate(),
+                                s.getStartTime() != null ? s.getStartTime() : LocalTime.MIN);
+                        return !shiftStart.isBefore(boundaryMonth);
+                    })
                     .mapToDouble(s -> s.getTipAmount() != null ? s.getTipAmount() : 0.0)
                     .sum();
+
+            double hourlyRate = settings.getHourlyRate() != null ? settings.getHourlyRate() : 0.0;
 
             List<Map<String, Object>> recent = shiftRepository
                     .findTop5ByUserIdOrderByDateDesc(userId)
