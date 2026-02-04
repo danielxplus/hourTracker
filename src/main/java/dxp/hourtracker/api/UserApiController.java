@@ -451,6 +451,8 @@ public class UserApiController {
                     Map<String, Object> m = new HashMap<>();
                     m.put("id", s.getId());
                     m.put("date", s.getDate());
+                    m.put("startTime", s.getStartTime());
+                    m.put("endTime", s.getEndTime());
                     m.put("shiftType", s.getShiftType());
                     m.put("hours", s.getHours());
                     m.put("salary", s.getSalary());

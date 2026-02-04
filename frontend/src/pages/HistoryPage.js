@@ -40,6 +40,21 @@ export default function HistoryPage() {
     const [tipShiftId, setTipShiftId] = useState(null);
 
     // --- Helpers ---
+    const formatTime = useMemo(() => (val) => {
+        if (Array.isArray(val)) {
+            return `${String(val[0]).padStart(2, '0')}:${String(val[1]).padStart(2, '0')}`;
+        }
+        if (typeof val === 'string') return val.slice(0, 5);
+        return "";
+    }, []);
+
+    const formatDate = useMemo(() => (d) => {
+        if (Array.isArray(d)) {
+            return `${d[0]}-${String(d[1]).padStart(2, '0')}-${String(d[2]).padStart(2, '0')}`;
+        }
+        return d;
+    }, []);
+
     const shiftTypeMap = useMemo(() => getShiftTypeMap(shiftTypes), [shiftTypes]);
 
     // --- Load Data ---
@@ -185,17 +200,13 @@ export default function HistoryPage() {
         console.log("Filter:", filter, "Cutoff:", cutoff ? cutoff.format() : "None");
 
         return items.filter((item) => {
-            const dateStr = item.date; // YYYY-MM-DD
-            const timeStr = item.startTime ? item.startTime.slice(0, 5) : "00:00";
+            const dateStr = formatDate(item.date);
+            const timeStr = formatTime(item.startTime) || "00:00";
             const itemDateTime = dayjs(`${dateStr}T${timeStr}`);
-
-            if (filter !== "all") {
-                // console.log(`Item: ${dateStr} ${timeStr}`, itemDateTime.format(), " >= ", cutoff.format(), "?", itemDateTime.isAfter(cutoff) || itemDateTime.isSame(cutoff));
-            }
 
             return itemDateTime.isAfter(cutoff) || itemDateTime.isSame(cutoff);
         });
-    }, [items, filter]);
+    }, [items, filter, formatDate, formatTime]);
 
     return (
         <Layout>
@@ -241,12 +252,14 @@ export default function HistoryPage() {
                 /* List View */
                 <>
                     {/* Filter Tabs */}
-                    <section className="mb-4 flex gap-2 rounded-xl bg-skin-bg-secondary p-1 text-xs" dir="rtl">
+                    <section className="mb-4 flex gap-2 rounded-xl bg-skin-bg-secondary p-1 text-xs border border-skin-border-secondary shadow-sm mx-1" dir="rtl">
                         {['all', 'week', 'month', 'year'].map(f => (
                             <button
                                 key={f}
                                 onClick={() => setFilter(f)}
-                                className={`flex-1 rounded-lg px-3 py-2 font-medium transition-all ${filter === f ? "bg-skin-card-bg shadow-sm text-skin-text-primary" : "text-skin-text-secondary"
+                                className={`flex-1 rounded-xl px-3 py-2.5 font-semibold transition-all duration-200 ${filter === f
+                                    ? "bg-skin-card-bg shadow-md text-skin-accent-primary scale-[1.02] ring-1 ring-skin-border-secondary/30"
+                                    : "text-skin-text-tertiary hover:text-skin-text-secondary hover:bg-skin-bg-primary/50"
                                     }`}
                             >
                                 {{ all: 'הכל', week: 'שבוע', month: 'חודש', year: 'שנה' }[f]}
