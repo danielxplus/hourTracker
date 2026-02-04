@@ -122,10 +122,11 @@ public class UserApiController {
             YearMonth thisMonth = YearMonth.now();
             LocalDate startOfMonthDate = thisMonth.atDay(1);
             LocalDate endOfMonthDate = thisMonth.atEndOfMonth();
-            LocalDateTime boundaryMonth = LocalDateTime.of(startOfMonthDate, LocalTime.of(6, 29));
-            if (LocalDateTime.now().isBefore(boundaryMonth)) {
-                boundaryMonth = boundaryMonth.minusMonths(1);
+            LocalDateTime tempBoundaryMonth = LocalDateTime.of(startOfMonthDate, LocalTime.of(6, 29));
+            if (LocalDateTime.now().isBefore(tempBoundaryMonth)) {
+                tempBoundaryMonth = tempBoundaryMonth.minusMonths(1);
             }
+            final LocalDateTime effectiveBoundaryMonth = tempBoundaryMonth;
 
             // Fetch roughly by date range first
             List<Shift> monthShiftsCandidates = shiftRepository.findByUserIdAndDateBetweenOrderByDateDesc(
@@ -148,7 +149,7 @@ public class UserApiController {
                     .filter(s -> {
                         LocalDateTime shiftStart = LocalDateTime.of(s.getDate(),
                                 s.getStartTime() != null ? s.getStartTime() : LocalTime.MIN);
-                        return !shiftStart.isBefore(boundaryMonth);
+                        return !shiftStart.isBefore(effectiveBoundaryMonth);
                     })
                     .mapToDouble(s -> (s.getHours() != null ? s.getHours() : 0.0))
                     .sum();
@@ -158,10 +159,11 @@ public class UserApiController {
             // Find most recent Sunday (or today if today is Sunday)
             LocalDate previousSunday = today
                     .with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
-            LocalDateTime boundaryWeek = LocalDateTime.of(previousSunday, LocalTime.of(6, 29));
-            if (LocalDateTime.now().isBefore(boundaryWeek)) {
-                boundaryWeek = boundaryWeek.minusWeeks(1);
+            LocalDateTime tempBoundaryWeek = LocalDateTime.of(previousSunday, LocalTime.of(6, 29));
+            if (LocalDateTime.now().isBefore(tempBoundaryWeek)) {
+                tempBoundaryWeek = tempBoundaryWeek.minusWeeks(1);
             }
+            final LocalDateTime effectiveBoundaryWeek = tempBoundaryWeek;
 
             List<Shift> weekShifts = shiftRepository.findByUserIdAndDateBetweenOrderByDateDesc(
                     userId, previousSunday, today);
@@ -170,7 +172,7 @@ public class UserApiController {
                     .filter(s -> {
                         LocalDateTime shiftStart = LocalDateTime.of(s.getDate(),
                                 s.getStartTime() != null ? s.getStartTime() : LocalTime.MIN);
-                        return !shiftStart.isBefore(boundaryWeek);
+                        return !shiftStart.isBefore(effectiveBoundaryWeek);
                     })
                     .mapToDouble(s -> (s.getHours() != null ? s.getHours() : 0.0))
                     .sum();
@@ -181,7 +183,7 @@ public class UserApiController {
                     .filter(s -> {
                         LocalDateTime shiftStart = LocalDateTime.of(s.getDate(),
                                 s.getStartTime() != null ? s.getStartTime() : LocalTime.MIN);
-                        return !shiftStart.isBefore(boundaryMonth);
+                        return !shiftStart.isBefore(effectiveBoundaryMonth);
                     })
                     .mapToDouble(s -> (s.getSalary() != null ? s.getSalary() : 0.0))
                     .sum();
@@ -190,7 +192,7 @@ public class UserApiController {
                     .filter(s -> {
                         LocalDateTime shiftStart = LocalDateTime.of(s.getDate(),
                                 s.getStartTime() != null ? s.getStartTime() : LocalTime.MIN);
-                        return !shiftStart.isBefore(boundaryMonth);
+                        return !shiftStart.isBefore(effectiveBoundaryMonth);
                     })
                     .mapToDouble(s -> s.getTipAmount() != null ? s.getTipAmount() : 0.0)
                     .sum();
