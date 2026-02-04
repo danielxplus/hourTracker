@@ -74,24 +74,21 @@ public class UserApiController {
         response.put("email", user.getEmail());
 
         // Add settings info (isPremium and theme)
-        UserSettings settings = userSettingsRepository.findByUserId(externalId).orElse(null);
-        if (settings != null) {
-            response.put("isPremium", settings.getIsPremium());
-            response.put("themePreference",
-                    settings.getThemePreference() != null ? settings.getThemePreference() : "default");
-        } else {
-            // New user or no settings?
-            // If new user, they are NOT premium by default now? Or do we want to give them
-            // trial?
-            // Let's assume false for consistency, or true if that was the old default.
-            // Old default was "true". But for "amount of premium days" model, users likely
-            // need to buy.
-            // Let's go with FALSE for new users unless decided otherwise.
-            // Actually, the user said "purchasing premium will grant 30 days", implying
-            // default might be 0.
-            response.put("isPremium", false);
-            response.put("themePreference", "default");
-        }
+        UserSettings settings = userSettingsRepository.findByUserId(externalId)
+                .orElseGet(() -> {
+                    UserSettings s = new UserSettings();
+                    s.setUserId(externalId);
+                    s.setHourlyRate(51.0);
+                    s.setOvertimeHourlyRate(51.0 * 1.25);
+                    s.setShabatHourlyRate(51.0 * 1.50);
+                    s.setPremiumExpiresAt(LocalDateTime.now().plusDays(7));
+                    return userSettingsRepository.save(s);
+                });
+
+        response.put("isPremium", settings.getIsPremium());
+        response.put("premiumExpiresAt", settings.getPremiumExpiresAt());
+        response.put("themePreference",
+                settings.getThemePreference() != null ? settings.getThemePreference() : "default");
 
         return response;
     }
@@ -125,8 +122,10 @@ public class UserApiController {
             YearMonth thisMonth = YearMonth.now();
             LocalDate startOfMonthDate = thisMonth.atDay(1);
             LocalDate endOfMonthDate = thisMonth.atEndOfMonth();
-            LocalDateTime boundaryMonth = LocalDateTime.of(startOfMonthDate,
-                    LocalTime.of(6, 29));
+            LocalDateTime boundaryMonth = LocalDateTime.of(startOfMonthDate, LocalTime.of(6, 29));
+            if (LocalDateTime.now().isBefore(boundaryMonth)) {
+                boundaryMonth = boundaryMonth.minusMonths(1);
+            }
 
             // Fetch roughly by date range first
             List<Shift> monthShiftsCandidates = shiftRepository.findByUserIdAndDateBetweenOrderByDateDesc(
@@ -159,8 +158,10 @@ public class UserApiController {
             // Find most recent Sunday (or today if today is Sunday)
             LocalDate previousSunday = today
                     .with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
-            LocalDateTime boundaryWeek = LocalDateTime.of(previousSunday,
-                    LocalTime.of(6, 29));
+            LocalDateTime boundaryWeek = LocalDateTime.of(previousSunday, LocalTime.of(6, 29));
+            if (LocalDateTime.now().isBefore(boundaryWeek)) {
+                boundaryWeek = boundaryWeek.minusWeeks(1);
+            }
 
             List<Shift> weekShifts = shiftRepository.findByUserIdAndDateBetweenOrderByDateDesc(
                     userId, previousSunday, today);
@@ -238,6 +239,7 @@ public class UserApiController {
             response.put("overtimeHourlyRate", 0);
             response.put("shabatHourlyRate", 0);
             response.put("isPremium", false);
+            response.put("premiumExpiresAt", null);
             response.put("themePreference", "default");
             return response;
         }
@@ -254,8 +256,7 @@ public class UserApiController {
                     s.setHourlyRate(defaultBase);
                     s.setOvertimeHourlyRate(defaultBase * 1.25);
                     s.setShabatHourlyRate(defaultBase * 1.50);
-                    // s.setIsPremium(true); // Don't set true by default anymore, or set a trial
-                    // period
+                    s.setPremiumExpiresAt(LocalDateTime.now().plusDays(7));
                     return userSettingsRepository.save(s);
                 });
 
@@ -277,6 +278,7 @@ public class UserApiController {
         response.put("overtimeHourlyRate", currentOvertime);
         response.put("shabatHourlyRate", currentShabat);
         response.put("isPremium", settings.getIsPremium());
+        response.put("premiumExpiresAt", settings.getPremiumExpiresAt());
         response.put("themePreference",
                 settings.getThemePreference() != null ? settings.getThemePreference() : "default");
         return response;

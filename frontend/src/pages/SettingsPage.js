@@ -108,7 +108,7 @@ export default function SettingsPage() {
 
       <div className="space-y-3" dir="rtl">
         {/* Display Name */}
-        <div className="bg-skin-card-bg rounded-2xl border border-skin-border-secondary p-4 hover:border-skin-border-secondary transition-colors">
+        <div className="bg-skin-card-bg rounded-2xl border border-skin-border-secondary p-4 hover:border-skin-accent-primary focus-ring-accent transition-all">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <div className="w-8 h-8 rounded-full bg-skin-accent-primary-bg flex items-center justify-center flex-shrink-0">
@@ -146,7 +146,7 @@ export default function SettingsPage() {
                   type="number"
                   value={hourlyRate}
                   onChange={handleRateChange}
-                  className="w-24 text-sm text-left bg-skin-bg-secondary rounded-lg px-3 py-2 border border-skin-border-secondary focus:outline-none focus:ring-2 focus:ring-skin-accent-primary/20 focus:border-skin-accent-primary transition-all text-skin-text-primary"
+                  className="w-24 text-sm text-left bg-skin-bg-secondary rounded-lg px-3 py-2 border border-skin-border-secondary transition-all text-skin-text-primary focus-ring-accent"
                 />
                 <span className="text-xs text-skin-text-tertiary font-medium">₪</span>
               </div>
@@ -165,7 +165,7 @@ export default function SettingsPage() {
                   step="0.1"
                   value={overtimeHourlyRate}
                   onChange={(e) => setOvertimeHourlyRate(e.target.value)}
-                  className="w-24 text-sm text-left bg-skin-bg-secondary rounded-lg px-3 py-2 border border-skin-border-secondary focus:outline-none focus:ring-2 focus:ring-skin-accent-primary/20 focus:border-skin-accent-primary transition-all text-skin-text-primary"
+                  className="w-24 text-sm text-left bg-skin-bg-secondary rounded-lg px-3 py-2 border border-skin-border-secondary transition-all text-skin-text-primary focus-ring-accent"
                 />
                 <span className="text-xs text-skin-text-tertiary font-medium">₪</span>
               </div>
@@ -184,7 +184,7 @@ export default function SettingsPage() {
                   step="0.1"
                   value={shabatHourlyRate}
                   onChange={(e) => setShabatHourlyRate(e.target.value)}
-                  className="w-24 text-sm text-left bg-skin-bg-secondary rounded-lg px-3 py-2 border border-skin-border-secondary focus:outline-none focus:ring-2 focus:ring-skin-accent-primary/20 focus:border-skin-accent-primary transition-all text-skin-text-primary"
+                  className="w-24 text-sm text-left bg-skin-bg-secondary rounded-lg px-3 py-2 border border-skin-border-secondary transition-all text-skin-text-primary focus-ring-accent"
                 />
                 <span className="text-xs text-skin-text-tertiary font-medium">₪</span>
               </div>
@@ -254,18 +254,16 @@ export default function SettingsPage() {
             onClick={() => setShowLogoutModal(true)}
             className="w-full rounded-xl border border-skin-border-secondary bg-skin-card-bg text-skin-text-secondary py-3 text-sm font-medium hover:bg-skin-bg-secondary hover:border-skin-border-primary transition-colors flex items-center justify-center gap-2"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-4 h-4" /> התנתק
           </button>
         </div>
       </div>
       <div className="pt-2">
         <div className="text-center text-xs text-skin-text-secondary">
           {isPremium ? (
-            premiumExpiresAt && (
-              <div className="mb-2">
-                משתמש פרמיום בתוקף עד: {new Date(premiumExpiresAt).toLocaleDateString('he-IL')}
-              </div>
-            )
+            <div className="mb-2">
+              משתמש פרמיום בתוקף עד: {premiumExpiresAt ? new Date(premiumExpiresAt).toLocaleDateString('he-IL') : 'תאריך לא ידוע'}
+            </div>
           ) : (
             <div className="mb-2">משתמש חינמי. לרכישת פרמיום שלחו הודעה ל-0506425121</div>
           )}

@@ -156,7 +156,6 @@ export default function HistoryPage() {
     };
 
     // --- Filtering ---
-    // --- Filtering ---
     const filteredItems = useMemo(() => {
         if (filter === "all") return items;
 
@@ -164,14 +163,23 @@ export default function HistoryPage() {
         let cutoff = null;
 
         if (filter === "week") {
-            // Most recent Sunday at 06:29 (to include 06:30 shifts safely)
-            cutoff = now.day(0).hour(6).minute(29).second(0).millisecond(0);
+            // Week starts Sunday at 06:29 am
+            cutoff = now.startOf('day').day(0).hour(6).minute(29).second(0).millisecond(0);
+            if (now.isBefore(cutoff)) {
+                cutoff = cutoff.subtract(1, 'week');
+            }
         } else if (filter === "month") {
-            // 1st of current month at 06:29
-            cutoff = now.date(1).hour(6).minute(29).second(0).millisecond(0);
+            // Month starts 1st at 06:29 am
+            cutoff = now.startOf('month').hour(6).minute(29).second(0).millisecond(0);
+            if (now.isBefore(cutoff)) {
+                cutoff = cutoff.subtract(1, 'month');
+            }
         } else if (filter === "year") {
-            // Jan 1st of current year at 06:29
-            cutoff = now.month(0).date(1).hour(6).minute(29).second(0).millisecond(0);
+            // Jan 1st at 06:29 am
+            cutoff = now.startOf('year').hour(6).minute(29).second(0).millisecond(0);
+            if (now.isBefore(cutoff)) {
+                cutoff = cutoff.subtract(1, 'year');
+            }
         }
 
         console.log("Filter:", filter, "Cutoff:", cutoff ? cutoff.format() : "None");
