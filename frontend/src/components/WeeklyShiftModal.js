@@ -77,7 +77,8 @@ export default function WeeklyShiftModal({ isOpen, onClose, shiftTypes, onSave, 
             onClick={onClose}
         >
             <div
-                className="bg-skin-card-bg rounded-t-2xl w-full max-w-md px-5 pt-5 pb-8 max-h-[90vh] overflow-y-auto relative border-t border-skin-border-secondary shadow-2xl"
+                className={`bg-skin-card-bg rounded-t-2xl w-full max-w-md px-5 pt-5 pb-8 max-h-[90vh] relative border-t border-skin-border-secondary shadow-2xl ${isPremium ? 'overflow-y-auto' : 'overflow-hidden'
+                    }`}
                 dir="rtl"
                 onClick={(e) => e.stopPropagation()}
             >
@@ -107,7 +108,8 @@ export default function WeeklyShiftModal({ isOpen, onClose, shiftTypes, onSave, 
                                 {day.shiftCode && (
                                     <button
                                         onClick={() => handleClearShift(index)}
-                                        className="text-xs text-red-600 hover:text-red-700 font-medium"
+                                        disabled={!isPremium}
+                                        className="text-xs text-red-600 hover:text-red-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         נקה
                                     </button>
@@ -119,10 +121,11 @@ export default function WeeklyShiftModal({ isOpen, onClose, shiftTypes, onSave, 
                                     <button
                                         key={shift.code}
                                         onClick={() => handleShiftChange(index, shift.code)}
+                                        disabled={!isPremium}
                                         className={`py-2 px-3 rounded-lg text-xs font-medium transition-all ${day.shiftCode === shift.code
                                             ? 'bg-skin-accent-primary text-white shadow-sm'
                                             : 'bg-skin-card-bg text-skin-text-secondary border border-skin-border-primary hover:border-skin-accent-primary'
-                                            }`}
+                                            } ${!isPremium ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
                                         {shift.nameHe || shift.name || shift.code}
                                     </button>
@@ -152,7 +155,8 @@ export default function WeeklyShiftModal({ isOpen, onClose, shiftTypes, onSave, 
                     </button>
                     <button
                         onClick={handleSave}
-                        className="flex-1 bg-skin-accent-primary text-white py-3 rounded-xl font-medium hover:opacity-90 active:scale-95 transition-all shadow-sm"
+                        disabled={!isPremium}
+                        className="flex-1 bg-skin-accent-primary text-white py-3 rounded-xl font-medium hover:opacity-90 active:scale-95 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
                     >
                         <Plus className="w-4 h-4 inline ml-1" />
                         הוסף משמרות

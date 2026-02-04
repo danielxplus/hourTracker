@@ -54,21 +54,6 @@ export default function SettingsPage() {
     load();
   }, [user, refreshUser]); // added refreshUser to dependency if needed, though usually stable
 
-  async function handleAddPremiumDays() {
-    setIsSaving(true);
-    try {
-      const res = await api.post("/settings/add-premium", { days: 30 });
-      setIsPremium(res.data.isPremium);
-      setPremiumExpiresAt(res.data.premiumExpiresAt);
-      alert("נוספו 30 ימי פרמיום בהצלחה!");
-    } catch (e) {
-      console.error(e);
-      alert("שגיאה בהוספת ימי פרמיום");
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
   function handleRateChange(e) {
     const val = e.target.value;
     setHourlyRate(val);
@@ -123,7 +108,7 @@ export default function SettingsPage() {
 
       <div className="space-y-3" dir="rtl">
         {/* Display Name */}
-        <div className="bg-skin-card-bg rounded-2xl border border-skin-border-secondary p-4 hover:border-skin-accent-primary/30 transition-colors">
+        <div className="bg-skin-card-bg rounded-2xl border border-skin-border-secondary p-4 hover:border-skin-border-secondary transition-colors">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <div className="w-8 h-8 rounded-full bg-skin-accent-primary-bg flex items-center justify-center flex-shrink-0">
@@ -282,24 +267,9 @@ export default function SettingsPage() {
               </div>
             )
           ) : (
-            <div className="mb-2">משתמש חינמי</div>
+            <div className="mb-2">משתמש חינמי. לרכישת פרמיום שלחו הודעה ל-0506425121</div>
           )}
 
-          <div className="flex flex-col gap-2 items-center">
-            {!isPremium && (
-              <div>לרכישת פרמיום שלחו הודעה ל-0506425121</div>
-            )}
-
-            {/* Dev/Demo button to add premium days */}
-            <button
-              type="button"
-              onClick={handleAddPremiumDays}
-              disabled={isSaving}
-              className="text-xs text-skin-accent-primary underline hover:text-skin-accent-secondary"
-            >
-              (סימולציה) הוסף 30 ימי פרמיום
-            </button>
-          </div>
         </div>
       </div>
 
