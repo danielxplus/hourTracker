@@ -252,14 +252,12 @@ export default function HistoryPage() {
                 /* List View */
                 <>
                     {/* Filter Tabs */}
-                    <section className="mb-4 flex gap-2 rounded-xl bg-skin-bg-secondary p-1 text-xs border border-skin-border-secondary shadow-sm mx-1" dir="rtl">
+                    <section className="mb-4 flex gap-2 rounded-xl bg-skin-bg-secondary p-1 text-xs" dir="rtl">
                         {['all', 'week', 'month', 'year'].map(f => (
                             <button
                                 key={f}
                                 onClick={() => setFilter(f)}
-                                className={`flex-1 rounded-xl px-3 py-2.5 font-semibold transition-all duration-200 ${filter === f
-                                    ? "bg-skin-card-bg shadow-md text-skin-accent-primary scale-[1.02] ring-1 ring-skin-border-secondary/30"
-                                    : "text-skin-text-tertiary hover:text-skin-text-secondary hover:bg-skin-bg-primary/50"
+                                className={`flex-1 rounded-lg px-3 py-2 font-medium transition-all ${filter === f ? "bg-skin-card-bg shadow-sm text-skin-text-primary" : "text-skin-text-secondary"
                                     }`}
                             >
                                 {{ all: 'הכל', week: 'שבוע', month: 'חודש', year: 'שנה' }[f]}
