@@ -103,7 +103,7 @@ export default function SettingsPage() {
   return (
     <Layout>
       <header className="mb-6 pt-2" dir="rtl">
-        <h1 className="text-xl font-medium text-skin-text-primary">הגדרות</h1>
+        <h1 className="text-xl font-medium text-skin-text-primary mb-0.5">הגדרות</h1>
       </header>
 
       <div className="space-y-3" dir="rtl">

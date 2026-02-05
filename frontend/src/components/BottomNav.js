@@ -20,14 +20,18 @@ export default function BottomNav() {
     return (
         <nav className="fixed bottom-0 inset-x-0 pb-6 px-4 pointer-events-none z-50" dir="rtl">
             <div className="max-w-md mx-auto pointer-events-auto">
-                <div className="bg-skin-nav-bg/90 backdrop-blur-xl rounded-[28px] border border-skin-border-secondary/50 shadow-lg shadow-black/5">
+                <div
+                    className="backdrop-blur-xl rounded-[28px] border border-skin-border-primary shadow-lg shadow-black/5"
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--nav-bg), transparent 10%)' }}
+                >
                     <div className="relative flex justify-around px-2 py-2">
                         {/* Animated Background Slider */}
                         <div
-                            className="absolute top-2 bottom-2 bg-skin-text-primary/5 rounded-[20px] shadow-sm transition-all duration-300 ease-out"
+                            className="absolute top-2 bottom-2 rounded-[20px] shadow-sm transition-all duration-300 ease-out"
                             style={{
                                 right: `${2 + activeIndex * (100 / tabs.length)}%`,
                                 width: `${100 / tabs.length - 4}%`,
+                                backgroundColor: 'var(--bg-primary)', // Use theme's primary bg (usually card color)
                             }}
                         />
 
