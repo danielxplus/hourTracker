@@ -348,8 +348,6 @@ public class UserApiController {
         response.put("overtimeHourlyRate", settings.getOvertimeHourlyRate());
         response.put("shabatHourlyRate", settings.getShabatHourlyRate());
         response.put("themePreference", settings.getThemePreference());
-<<<<<<< HEAD
-=======
         return response;
     }
 
@@ -389,7 +387,6 @@ public class UserApiController {
 
         response.put("isPremium", settings.getIsPremium());
         response.put("premiumExpiresAt", settings.getPremiumExpiresAt());
->>>>>>> dev-update
         return response;
     }
 

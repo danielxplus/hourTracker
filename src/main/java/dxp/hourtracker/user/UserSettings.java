@@ -68,16 +68,6 @@ public class UserSettings {
      * Theme preference: "default", "light", "dark", "pitch-black"
      */
     @Builder.Default
-<<<<<<< HEAD
-    @Column(name = "is_premium", nullable = false, columnDefinition = "boolean default false")
-    private Boolean isPremium = true;
-
-    /**
-     * Theme preference: "default", "light", "dark", "pitch-black"
-     */
-    @Builder.Default
-=======
->>>>>>> dev-update
     @Column(name = "theme_preference")
     private String themePreference = "default";
 }
