@@ -54,7 +54,7 @@ export default function HistoryPage() {
 
     useEffect(() => {
         loadHistory();
-        api.get("/shift-types").then(res => setShiftTypes(res.data)).catch(() => {});
+        api.get("/shift-types").then(res => setShiftTypes(res.data)).catch(() => { });
 
         // Close menu on click outside
         const handleClickOutside = () => setActiveMenuId(null);
@@ -156,9 +156,8 @@ export default function HistoryPage() {
                     <button
                         key={f}
                         onClick={() => setFilter(f)}
-                        className={`flex-1 rounded-lg px-3 py-2 font-medium transition-all ${
-                            filter === f ? "bg-white shadow-sm text-zinc-900" : "text-zinc-500"
-                        }`}
+                        className={`flex-1 rounded-lg px-3 py-2 font-medium transition-all ${filter === f ? "bg-white shadow-sm text-zinc-900" : "text-zinc-500"
+                            }`}
                     >
                         {{ all: 'הכל', week: 'שבוע', month: 'חודש', year: 'שנה' }[f]}
                     </button>
@@ -197,7 +196,7 @@ export default function HistoryPage() {
                                     <p className="text-xs text-zinc-500 truncate">
                                         {new Date(item.date).toLocaleDateString("he-IL", { day: 'numeric', month: 'short' })}
                                         <span className="mx-1.5">•</span>
-                                        {item.hours.toFixed(1)} שעות
+                                        {(item.hours ?? 0).toFixed(1)} שעות
                                     </p>
                                 </div>
 
@@ -205,7 +204,7 @@ export default function HistoryPage() {
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                     <div className="text-right">
                                         <div className="text-base font-semibold text-zinc-900">
-                                            ₪{item.salary.toFixed(0)}
+                                            ₪{(item.salary ?? 0).toFixed(0)}
                                         </div>
                                         {item.tipAmount > 0 && (
                                             <div className="text-[10px] text-emerald-600 font-medium">
@@ -302,11 +301,10 @@ export default function HistoryPage() {
                                     <button
                                         key={shift.code}
                                         onClick={() => handleShiftSelect(shift)}
-                                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all active:scale-95 ${
-                                            isSelected
+                                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all active:scale-95 ${isSelected
                                                 ? 'bg-zinc-800 border-zinc-800 text-white shadow-md'
                                                 : 'border-zinc-200 bg-white text-zinc-600'
-                                        }`}
+                                            }`}
                                     >
                                         <div className={`p-2 rounded-full ${isSelected ? 'bg-white/20' : config.bg}`}>
                                             <Icon className={`w-6 h-6 ${isSelected ? 'text-white' : config.color}`} />

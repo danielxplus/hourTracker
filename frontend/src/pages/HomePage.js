@@ -473,9 +473,8 @@ export default function HomePage() {
                             return (
                                 <div
                                     key={item.id}
-                                    className={`bg-white rounded-xl border p-4 transition-all ${
-                                        ongoing ? 'border-emerald-300 bg-emerald-50/30' : 'border-zinc-200/60'
-                                    }`}
+                                    className={`bg-white rounded-xl border p-4 transition-all ${ongoing ? 'border-emerald-300 bg-emerald-50/30' : 'border-zinc-200/60'
+                                        }`}
                                 >
                                     <div className="flex items-center gap-3">
                                         {/* Icon */}
@@ -496,7 +495,7 @@ export default function HomePage() {
                                             <p className="text-xs text-zinc-500 truncate">
                                                 {new Date(item.date).toLocaleDateString("he-IL", { day: 'numeric', month: 'short' })}
                                                 <span className="mx-1.5">•</span>
-                                                {item.hours.toFixed(1)} שעות
+                                                {(item.hours ?? 0).toFixed(1)} שעות
                                             </p>
                                         </div>
 
@@ -504,7 +503,7 @@ export default function HomePage() {
                                         <div className="flex items-center gap-2 flex-shrink-0">
                                             <div className="text-right">
                                                 <div className="text-base font-semibold text-zinc-900">
-                                                    ₪{item.salary.toFixed(0)}
+                                                    ₪{(item.salary ?? 0).toFixed(0)}
                                                 </div>
                                                 {item.tip > 0 && (
                                                     <div className="text-[10px] text-emerald-600 font-medium">
