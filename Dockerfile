@@ -29,4 +29,4 @@ WORKDIR /app
 
 COPY --from=backend-builder /app/target/*.jar app.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-Xmx380m", "-Xss512k", "-XX:+UseSerialGC", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Xmx380m", "-Xss512k", "-XX:+UseSerialGC", "-Dserver.port=8080", "-Dserver.address=0.0.0.0", "-jar", "app.jar"]

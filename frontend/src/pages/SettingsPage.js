@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { User, Banknote, LogOut, Check, X, Palette, Lock } from "lucide-react";
-import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import api from "../api/client";
@@ -101,7 +100,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <Layout>
+    <>
       <header className="mb-6 pt-2" dir="rtl">
         <h1 className="text-xl font-medium text-skin-text-primary mb-0.5">הגדרות</h1>
       </header>
@@ -299,6 +298,6 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
-    </Layout>
+    </>
   );
 }

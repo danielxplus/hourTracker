@@ -7,6 +7,7 @@ import HistoryPage from "./pages/HistoryPage";
 import LoginPage from "./pages/LoginPage";
 import ErrorPage from "./pages/ErrorPage";
 import ProtectedRoute from "./context/ProtectedRoute";
+import Layout from "./components/Layout";
 import "./index.css";
 
 function RootLayout() {
@@ -24,35 +25,26 @@ const router = createBrowserRouter([
     {
         path: "/",
         element: <RootLayout />,
-        errorElement: <ErrorPage />, // activates useRouteError() for crashes & 404s
+        errorElement: <ErrorPage />,
         children: [
-            {
-                path: "/",
-                element: (
-                    <ProtectedRoute>
-                        <HomePage />
-                    </ProtectedRoute>
-                ),
-            },
             {
                 path: "/login",
                 element: <LoginPage />,
             },
             {
-                path: "/settings",
+                // Protected Layout Route
                 element: (
                     <ProtectedRoute>
-                        <SettingsPage />
+                        <Layout>
+                            <Outlet />
+                        </Layout>
                     </ProtectedRoute>
                 ),
-            },
-            {
-                path: "/history",
-                element: (
-                    <ProtectedRoute>
-                        <HistoryPage />
-                    </ProtectedRoute>
-                ),
+                children: [
+                    { path: "/", element: <HomePage /> },
+                    { path: "/settings", element: <SettingsPage /> },
+                    { path: "/history", element: <HistoryPage /> },
+                ],
             },
         ],
     },

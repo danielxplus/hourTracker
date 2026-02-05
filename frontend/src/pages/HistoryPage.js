@@ -1,7 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import dayjs from "dayjs";
 import { Clock, MoreVertical, Wallet, Pencil, Trash2, X, List, Calendar } from "lucide-react";
-import Layout from "../components/Layout";
 import ShiftForm from "../components/ShiftForm";
 import CalendarView from "../components/CalendarView";
 import { shiftConfig, getShiftTypeMap } from "../utils/shiftUtils";
@@ -209,7 +208,7 @@ export default function HistoryPage() {
     }, [items, filter, formatDate, formatTime]);
 
     return (
-        <Layout>
+        <>
             <header className="mb-6 pt-2" dir="rtl">
                 <h1 className="text-xl font-medium text-skin-text-primary mb-0.5">היסטוריה</h1>
 
@@ -414,6 +413,6 @@ export default function HistoryPage() {
                     </div>
                 </div>
             )}
-        </Layout>
+        </>
     );
 }

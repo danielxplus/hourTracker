@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { Clock, X, Plus, Wallet, Pencil, Trash2, MoreVertical, AlertTriangle, CalendarDays } from "lucide-react";
-import Layout from "../components/Layout";
 import ShiftForm from "../components/ShiftForm";
 import WeeklyShiftModal from "../components/WeeklyShiftModal";
 import { useAuth } from "../context/AuthContext";
@@ -356,7 +355,7 @@ export default function HomePage() {
     }
 
     return (
-        <Layout>
+        <>
             <header className="mb-6 pt-2" dir="rtl">
                 <h1 className="text-xl font-medium text-skin-text-primary mb-0.5">
                     {greeting}, {userName}
@@ -718,6 +717,6 @@ export default function HomePage() {
                     </div>
                 </div>
             )}
-        </Layout>
+        </>
     );
 }
