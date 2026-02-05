@@ -174,36 +174,47 @@ export default function HistoryPage() {
         if (filter === "all") return items;
 
         const now = dayjs();
-        let cutoff = null;
+        let startCutoff = null;
+        let endCutoff = null;
 
         if (filter === "week") {
             // Week starts Sunday at 06:29 am
-            cutoff = now.startOf('day').day(0).hour(6).minute(29).second(0).millisecond(0);
-            if (now.isBefore(cutoff)) {
-                cutoff = cutoff.subtract(1, 'week');
+            startCutoff = now.startOf('day').day(0).hour(6).minute(29).second(0).millisecond(0);
+            if (now.isBefore(startCutoff)) {
+                startCutoff = startCutoff.subtract(1, 'week');
             }
+            // End of week is next Sunday 06:29
+            endCutoff = startCutoff.add(1, 'week');
         } else if (filter === "month") {
             // Month starts 1st at 06:29 am
-            cutoff = now.startOf('month').hour(6).minute(29).second(0).millisecond(0);
-            if (now.isBefore(cutoff)) {
-                cutoff = cutoff.subtract(1, 'month');
+            startCutoff = now.startOf('month').hour(6).minute(29).second(0).millisecond(0);
+            if (now.isBefore(startCutoff)) {
+                startCutoff = startCutoff.subtract(1, 'month');
             }
+            // End of month
+            endCutoff = startCutoff.add(1, 'month');
         } else if (filter === "year") {
             // Jan 1st at 06:29 am
-            cutoff = now.startOf('year').hour(6).minute(29).second(0).millisecond(0);
-            if (now.isBefore(cutoff)) {
-                cutoff = cutoff.subtract(1, 'year');
+            startCutoff = now.startOf('year').hour(6).minute(29).second(0).millisecond(0);
+            if (now.isBefore(startCutoff)) {
+                startCutoff = startCutoff.subtract(1, 'year');
             }
+            // End of year
+            endCutoff = startCutoff.add(1, 'year');
         }
 
-        console.log("Filter:", filter, "Cutoff:", cutoff ? cutoff.format() : "None");
+        console.log("Filter:", filter, "Range:", startCutoff?.format(), " -> ", endCutoff?.format());
 
         return items.filter((item) => {
             const dateStr = formatDate(item.date);
             const timeStr = formatTime(item.startTime) || "00:00";
             const itemDateTime = dayjs(`${dateStr}T${timeStr}`);
 
-            return itemDateTime.isAfter(cutoff) || itemDateTime.isSame(cutoff);
+            // Logic: Must be AFTER startCutoff AND BEFORE endCutoff
+            const isAfterStart = itemDateTime.isAfter(startCutoff) || itemDateTime.isSame(startCutoff);
+            const isBeforeEnd = endCutoff ? itemDateTime.isBefore(endCutoff) : true;
+
+            return isAfterStart && isBeforeEnd;
         });
     }, [items, filter, formatDate, formatTime]);
 
