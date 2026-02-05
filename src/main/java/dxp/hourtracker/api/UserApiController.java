@@ -300,51 +300,46 @@ public class UserApiController {
         }
         String userId = principal.getName();
 
-        Double hourlyRate = null;
-        Object value = body.get("hourlyRate");
-        if (value instanceof Number number) {
-            hourlyRate = number.doubleValue();
-        }
-        if (hourlyRate == null) {
-            hourlyRate = 0.0;
-        }
-
-        Double overtimeHourlyRate = null;
-        Object overtimeValue = body.get("overtimeHourlyRate");
-        if (overtimeValue instanceof Number number) {
-            overtimeHourlyRate = number.doubleValue();
-        }
-        if (overtimeHourlyRate == null) {
-            overtimeHourlyRate = 63.75;
-        }
-
-        Double shabatHourlyRate = null;
-        Object shabatValue = body.get("shabatHourlyRate");
-        if (shabatValue instanceof Number number) {
-            shabatHourlyRate = number.doubleValue();
-        }
-        if (shabatHourlyRate == null) {
-            shabatHourlyRate = 76.5; // 51 * 1.5
-        }
-
-        // Handle theme preference
-        String themePreference = (String) body.get("themePreference");
-        if (themePreference == null || themePreference.trim().isEmpty()) {
-            themePreference = "default";
-        }
-
         UserSettings settings = userSettingsRepository
                 .findByUserId(userId)
                 .orElseGet(() -> {
                     UserSettings s = new UserSettings();
                     s.setUserId(userId);
-                    // s.setIsPremium(true);
                     return s;
                 });
-        settings.setHourlyRate(hourlyRate);
-        settings.setOvertimeHourlyRate(overtimeHourlyRate);
-        settings.setShabatHourlyRate(shabatHourlyRate);
-        settings.setThemePreference(themePreference);
+
+        // Only update hourlyRate if provided in request
+        if (body.containsKey("hourlyRate")) {
+            Object value = body.get("hourlyRate");
+            if (value instanceof Number number) {
+                settings.setHourlyRate(number.doubleValue());
+            }
+        }
+
+        // Only update overtimeHourlyRate if provided in request
+        if (body.containsKey("overtimeHourlyRate")) {
+            Object overtimeValue = body.get("overtimeHourlyRate");
+            if (overtimeValue instanceof Number number) {
+                settings.setOvertimeHourlyRate(number.doubleValue());
+            }
+        }
+
+        // Only update shabatHourlyRate if provided in request
+        if (body.containsKey("shabatHourlyRate")) {
+            Object shabatValue = body.get("shabatHourlyRate");
+            if (shabatValue instanceof Number number) {
+                settings.setShabatHourlyRate(number.doubleValue());
+            }
+        }
+
+        // Only update theme preference if provided in request
+        if (body.containsKey("themePreference")) {
+            String themePreference = (String) body.get("themePreference");
+            if (themePreference != null && !themePreference.trim().isEmpty()) {
+                settings.setThemePreference(themePreference);
+            }
+        }
+
         userSettingsRepository.save(settings);
 
         response.put("hourlyRate", settings.getHourlyRate());
