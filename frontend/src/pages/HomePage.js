@@ -531,7 +531,7 @@ export default function HomePage() {
             </section>
 
             {/* FAB Buttons */}
-            <div className="fixed bottom-[88px] left-1/2 -translate-x-1/2 flex gap-3 z-40">
+            <div className="fixed bottom-[115px] left-1/2 -translate-x-1/2 flex gap-3 z-40">
                 {/* Weekly Shift Button */}
                 <button
                     onClick={() => setIsWeeklyShiftOpen(true)}
