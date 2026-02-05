@@ -77,7 +77,7 @@ export default function WeeklyShiftModal({ isOpen, onClose, shiftTypes, onSave, 
             onClick={onClose}
         >
             <div
-                className={`bg-skin-card-bg rounded-t-2xl w-full max-w-md px-5 pt-5 pb-8 max-h-[90vh] relative border-t border-skin-border-secondary shadow-2xl ${isPremium ? 'overflow-y-auto' : 'overflow-hidden'
+                className={`bg-skin-card-bg rounded-t-2xl w-full max-w-md px-5 pt-5 pb-28 max-h-[90vh] relative border-t border-skin-border-secondary shadow-2xl ${isPremium ? 'overflow-y-auto' : 'overflow-hidden'
                     }`}
                 dir="rtl"
                 onClick={(e) => e.stopPropagation()}

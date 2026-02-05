@@ -564,7 +564,7 @@ export default function HomePage() {
             {/* Add Shift Modal */}
             {isAddOpen && (
                 <div className="fixed inset-0 bg-skin-modal-overlay backdrop-blur-sm flex items-end justify-center z-50">
-                    <div className="bg-skin-card-bg rounded-t-2xl w-full max-w-md px-5 pt-5 pb-8 max-h-[90vh] overflow-y-auto" dir="rtl">
+                    <div className="bg-skin-card-bg rounded-t-2xl w-full max-w-md px-5 pt-5 pb-28 max-h-[90vh] overflow-y-auto" dir="rtl">
                         <div className="flex items-center justify-between mb-5">
                             <h2 className="text-lg font-medium text-skin-text-primary">
                                 {editShiftId ? 'עריכת משמרת' : 'משמרת חדשה'}

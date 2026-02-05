@@ -211,30 +211,28 @@ export default function HistoryPage() {
     return (
         <Layout>
             <header className="mb-6 pt-2" dir="rtl">
-                <div className="flex items-center justify-between">
-                    <h1 className="text-xl font-medium text-skin-text-primary">היסטוריה</h1>
+                <h1 className="text-xl font-medium text-skin-text-primary mb-0.5">היסטוריה</h1>
 
-                    {/* View Toggle */}
-                    <div className="flex gap-1 bg-skin-bg-secondary p-1 rounded-lg">
-                        <button
-                            onClick={() => setViewMode("list")}
-                            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === "list"
-                                ? "bg-skin-card-bg shadow-sm text-skin-text-primary"
-                                : "text-skin-text-secondary hover:text-skin-text-primary"
+                {/* View Toggle */}
+                <div className="flex gap-1 bg-skin-bg-secondary p-1 rounded-lg w-fit mt-2">
+                    <button
+                        onClick={() => setViewMode("list")}
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === "list"
+                            ? "bg-skin-card-bg shadow-sm text-skin-text-primary"
+                            : "text-skin-text-secondary hover:text-skin-text-primary"
                             }`}
-                        >
-                            <List className="w-4 h-4" />
-                        </button>
-                        <button
-                            onClick={() => setViewMode("calendar")}
-                            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === "calendar"
-                                ? "bg-skin-card-bg shadow-sm text-skin-text-primary"
-                                : "text-skin-text-secondary hover:text-skin-text-primary"
+                    >
+                        <List className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={() => setViewMode("calendar")}
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === "calendar"
+                            ? "bg-skin-card-bg shadow-sm text-skin-text-primary"
+                            : "text-skin-text-secondary hover:text-skin-text-primary"
                             }`}
-                        >
-                            <Calendar className="w-4 h-4" />
-                        </button>
-                    </div>
+                    >
+                        <Calendar className="w-4 h-4" />
+                    </button>
                 </div>
             </header>
 
@@ -260,7 +258,7 @@ export default function HistoryPage() {
                                 className={`flex-1 rounded-xl px-3 py-2.5 font-semibold transition-all duration-200 ${filter === f
                                     ? "bg-skin-card-bg shadow-md text-skin-accent-primary scale-[1.02] ring-1 ring-skin-border-secondary/30"
                                     : "text-skin-text-tertiary hover:text-skin-text-secondary hover:bg-skin-bg-primary/50"
-                                }`}
+                                    }`}
                             >
                                 {{ all: 'הכל', week: 'שבוע', month: 'חודש', year: 'שנה' }[f]}
                             </button>
