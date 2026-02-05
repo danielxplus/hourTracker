@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {  Clock, X, Plus, Wallet, Pencil, Trash2, MoreVertical, AlertTriangle, CalendarDays } from "lucide-react";
+import { Clock, X, Plus, Wallet, Pencil, Trash2, MoreVertical, AlertTriangle, CalendarDays } from "lucide-react";
 import Layout from "../components/Layout";
 import ShiftForm from "../components/ShiftForm";
 import WeeklyShiftModal from "../components/WeeklyShiftModal";
@@ -127,7 +127,9 @@ export default function HomePage() {
             let end = dayjs(`${dateStr}T${eTime}`);
             if (end.isBefore(start)) end = end.add(1, "day");
 
-            return now.isAfter(start) && now.add(5, 'minute').isBefore(end);
+            // Shift is active if started (or starting now) and not yet ended
+            // Using !isBefore(start) to include the exact start time
+            return !now.isBefore(start) && now.isBefore(end);
         }
         return false;
     }, [endedLocalIds, shiftTypeMap, formatTime, formatDate]);
@@ -374,7 +376,7 @@ export default function HomePage() {
                         </div>
                         {summary?.totalTips > 0 && (
                             <div className="text-xs text-skin-text-inverse-light">
-                                לא כולל ₪{summary.totalTips.toFixed(0)} בטיפים
+                                לא כולל ₪{(summary.totalTips ?? 0).toFixed(0)} בטיפים
                             </div>
                         )}
                     </div>
@@ -404,7 +406,7 @@ export default function HomePage() {
                         </div>
                     ) : displayShifts.length === 0 ? (
                         <div className="text-center py-12 bg-skin-bg-secondary rounded-xl border border-dashed border-skin-border-primary">
-                            <p className="text-sm text-skin-text-tertiary">אין משמרות לאחרונה</p>
+                            <p className="text-sm text-skin-text-tertiary">אין משמרות</p>
                         </div>
                     ) : (
                         displayShifts.map((item) => {
@@ -416,7 +418,7 @@ export default function HomePage() {
                                 <div
                                     key={item.id}
                                     className={`bg-skin-card-bg rounded-xl border p-4 transition-all ${ongoing ? 'border-skin-accent-primary bg-skin-accent-primary-bg shadow-sm relative z-10' : 'border-skin-border-secondary'
-                                    }`}
+                                        }`}
                                 >
                                     <div className="flex items-center gap-3">
                                         {/* Icon */}
@@ -440,7 +442,7 @@ export default function HomePage() {
                                             <p className="text-xs text-skin-text-tertiary truncate">
                                                 {new Date(item.date).toLocaleDateString("he-IL", { day: 'numeric', month: 'short' })}
                                                 <span className="mx-1.5">•</span>
-                                                {item.hours.toFixed(1)} שעות
+                                                {(item.hours ?? 0).toFixed(1)} שעות
                                             </p>
                                         </div>
 

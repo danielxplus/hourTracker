@@ -211,12 +211,10 @@ public class UserApiController {
                         m.put("shiftType", s.getShiftType());
                         m.put("hours", s.getHours());
                         m.put("salary", s.getSalary());
+                        m.put("tipAmount", s.getTipAmount());
                         m.put("tip", s.getTipAmount());
                         m.put("overtimeHours", s.getOvertimeHours());
                         m.put("overtimeSalary", s.getOvertimeSalary());
-
-                        m.put("salary", s.getSalary());
-                        m.put("tipAmount", s.getTipAmount());
 
                         return m;
                     })
