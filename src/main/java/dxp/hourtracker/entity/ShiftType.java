@@ -22,9 +22,14 @@ public class ShiftType {
 
     /**
      * Code such as MORNING / EVENING / NIGHT.
+     * Unique constraint should likely include workplaceId now, but simpler
+     * validation might be better.
      */
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String code;
+
+    @Column(name = "workplace_id")
+    private Long workplaceId;
 
     /**
      * Display name in Hebrew (e.g. "משמרת בוקר").

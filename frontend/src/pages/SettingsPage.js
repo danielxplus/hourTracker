@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
-import { User, Banknote, LogOut, Check, X, Palette, Lock } from "lucide-react";
+import { User, Banknote, LogOut, Check, X, Palette, Lock, Briefcase, Plus, Trash2, Edit2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import { useWorkplace } from "../context/WorkplaceContext";
 import api from "../api/client";
 import PremiumLock from '../components/PremiumLock';
 
 export default function SettingsPage() {
   const { user, refreshUser, logout } = useAuth();
   const { currentTheme, updateTheme, themes } = useTheme();
+  const { workplaces, activeWorkplaceId, setActiveWorkplaceId, refreshWorkplaces } = useWorkplace();
 
   const [hourlyRate, setHourlyRate] = useState(51);
   const [overtimeHourlyRate, setOvertimeHourlyRate] = useState(63.75);
@@ -19,39 +21,42 @@ export default function SettingsPage() {
   const [isPremium, setIsPremium] = useState(false);
   const [premiumExpiresAt, setPremiumExpiresAt] = useState(null);
 
+  // Workplace Modal State
+  const [isWorkplaceModalOpen, setIsWorkplaceModalOpen] = useState(false);
+  const [editingWorkplace, setEditingWorkplace] = useState(null);
+  const [wpForm, setWpForm] = useState({ name: "", color: "#3B82F6", isDefault: false });
+
   useEffect(() => {
     async function load() {
       try {
         const res = await api.get("/settings");
-        const fetchedRate = res.data.hourlyRate || 51;
-        setHourlyRate(fetchedRate);
-
-        const fetchedOvertime = res.data.overtimeHourlyRate;
-        if (!fetchedOvertime) {
-          setOvertimeHourlyRate(fetchedRate * 1.25);
-        } else {
-          setOvertimeHourlyRate(fetchedOvertime);
-        }
-
-        const fetchedShabat = res.data.shabatHourlyRate;
-        if (!fetchedShabat) {
-          setShabatHourlyRate(fetchedRate * 1.5);
-        } else {
-          setShabatHourlyRate(fetchedShabat);
-        }
-
         setIsPremium(res.data.isPremium ?? false);
         setPremiumExpiresAt(res.data.premiumExpiresAt);
 
         if (user) {
           setDisplayName(user.displayName || "");
         }
+
+        // Initial load of rates from settings (fallback)
+        // Actual rates will be updated when activeWorkplaceId changes
       } catch {
         // quiet fail
       }
     }
     load();
-  }, [user, refreshUser]); // added refreshUser to dependency if needed, though usually stable
+  }, [user, refreshUser]);
+
+  // Update stats when active workplace changes
+  useEffect(() => {
+    if (activeWorkplaceId && workplaces.length > 0) {
+      const active = workplaces.find(w => w.id === activeWorkplaceId);
+      if (active) {
+        setHourlyRate(active.hourlyRate || 0);
+        setOvertimeHourlyRate(active.overtimeHourlyRate || 0);
+        setShabatHourlyRate(active.shabatHourlyRate || 0);
+      }
+    }
+  }, [activeWorkplaceId, workplaces]);
 
   function handleRateChange(e) {
     const val = e.target.value;
@@ -65,15 +70,30 @@ export default function SettingsPage() {
   async function handleSaveSalary() {
     setIsSaving(true);
     try {
-      await api.post("/settings", {
-        hourlyRate: Number(hourlyRate),
-        overtimeHourlyRate: Number(overtimeHourlyRate),
-        shabatHourlyRate: Number(shabatHourlyRate),
-      });
+      if (activeWorkplaceId) {
+        // Update Active Workplace
+        await api.put(`/workplaces/${activeWorkplaceId}`, {
+          name: workplaces.find(w => w.id === activeWorkplaceId)?.name, // Keep name
+          color: workplaces.find(w => w.id === activeWorkplaceId)?.color, // Keep color
+          hourlyRate: Number(hourlyRate),
+          overtimeHourlyRate: Number(overtimeHourlyRate),
+          shabatHourlyRate: Number(shabatHourlyRate),
+          isDefault: workplaces.find(w => w.id === activeWorkplaceId)?.isDefault
+        });
+        refreshWorkplaces();
+      } else {
+        // Legacy Fallback
+        await api.post("/settings", {
+          hourlyRate: Number(hourlyRate),
+          overtimeHourlyRate: Number(overtimeHourlyRate),
+          shabatHourlyRate: Number(shabatHourlyRate),
+        });
+      }
       setSavedSection("salary");
       setTimeout(() => setSavedSection(""), 2000);
     } catch (e) {
       console.error(e);
+      alert("שגיאה בשמירה");
     } finally {
       setIsSaving(false);
     }
@@ -99,6 +119,55 @@ export default function SettingsPage() {
     await logout();
   }
 
+  // Workplace Handlers
+  const openWorkplaceModal = (wp = null) => {
+    if (wp) {
+      setEditingWorkplace(wp);
+      setWpForm({ name: wp.name, color: wp.color, isDefault: wp.isDefault });
+    } else {
+      setEditingWorkplace(null);
+      setWpForm({ name: "", color: "#3B82F6", isDefault: false });
+    }
+    setIsWorkplaceModalOpen(true);
+  };
+
+  const handleSaveWorkplace = async () => {
+    if (!wpForm.name) return alert("אנא הזן שם מקום עבודה");
+
+    try {
+      const payload = {
+        ...wpForm,
+        // Default rates for new workplace if not editing
+        hourlyRate: editingWorkplace ? editingWorkplace.hourlyRate : 50,
+        overtimeHourlyRate: editingWorkplace ? editingWorkplace.overtimeHourlyRate : 62.5,
+        shabatHourlyRate: editingWorkplace ? editingWorkplace.shabatHourlyRate : 75
+      };
+
+      if (editingWorkplace) {
+        await api.put(`/workplaces/${editingWorkplace.id}`, payload);
+      } else {
+        await api.post("/workplaces", payload);
+      }
+      refreshWorkplaces();
+      setIsWorkplaceModalOpen(false);
+    } catch (error) {
+      console.error(error);
+      alert("שגיאה בשמירה");
+    }
+  };
+
+  const handleDeleteWorkplace = async (id) => {
+    if (!window.confirm("האם למחוק את מקום העבודה?")) return;
+    try {
+      await api.delete(`/workplaces/${id}`);
+      refreshWorkplaces();
+    } catch (error) {
+      console.error(error);
+      alert("שגיאה במחיקה");
+    }
+  };
+
+
   return (
     <>
       <header className="mb-6 pt-2" dir="rtl">
@@ -106,6 +175,24 @@ export default function SettingsPage() {
       </header>
 
       <div className="space-y-3" dir="rtl">
+        {/* Workplace Switcher */}
+        <div className="bg-skin-card-bg rounded-2xl border border-skin-border-secondary p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Briefcase className="w-5 h-5 text-skin-accent-primary" />
+            <h3 className="text-sm font-medium text-skin-text-primary">מקום עבודה פעיל</h3>
+          </div>
+          <select
+            value={activeWorkplaceId || ""}
+            onChange={(e) => setActiveWorkplaceId(Number(e.target.value))}
+            className="w-full bg-skin-bg-secondary border border-skin-border-secondary rounded-xl px-4 py-3 text-sm text-skin-text-primary focus:outline-none focus:ring-2 focus:ring-skin-accent-primary/20 transition-all font-medium appearance-none"
+          >
+            <option value="" disabled>בחר מקום עבודה</option>
+            {workplaces.map(w => (
+              <option key={w.id} value={w.id}>{w.name}</option>
+            ))}
+          </select>
+        </div>
+
         {/* Display Name */}
         <div className="bg-skin-card-bg rounded-2xl border border-skin-border-secondary p-4 hover:border-skin-accent-primary focus-ring-accent transition-all">
           <div className="flex items-center justify-between gap-3">
@@ -270,6 +357,46 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* Workplace Management List */}
+      <div className="bg-skin-card-bg rounded-2xl border border-skin-border-secondary p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-medium text-skin-text-primary">ניהול מקומות עבודה</h3>
+          <button
+            onClick={() => openWorkplaceModal()}
+            className="p-1.5 rounded-lg bg-skin-accent-primary-bg text-skin-accent-primary hover:bg-skin-accent-primary/20 transition-colors"
+            title="הוסף מקום עבודה"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="space-y-2">
+          {workplaces.map(w => (
+            <div key={w.id} className="flex items-center justify-between p-3 rounded-xl bg-skin-bg-secondary border border-skin-border-secondary">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: w.color }}></div>
+                <span className="text-sm font-medium text-skin-text-primary">{w.name} {w.isDefault && <span className="text-xs text-skin-text-tertiary">(ברירת מחדל)</span>}</span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => openWorkplaceModal(w)}
+                  className="p-1.5 rounded-lg text-skin-text-secondary hover:text-skin-accent-primary hover:bg-skin-card-bg"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
+                {workplaces.length > 1 && (
+                  <button
+                    onClick={() => handleDeleteWorkplace(w.id)}
+                    className="p-1.5 rounded-lg text-skin-text-secondary hover:text-red-500 hover:bg-skin-card-bg"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
         <div className="fixed inset-0 bg-skin-modal-overlay backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowLogoutModal(false)}>
@@ -293,6 +420,67 @@ export default function SettingsPage() {
                 className="flex-1 bg-red-600 text-white py-3 rounded-xl font-medium hover:bg-red-700 active:scale-95 transition-all"
               >
                 התנתק
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Workplace Edit/Create Modal */}
+      {isWorkplaceModalOpen && (
+        <div className="fixed inset-0 bg-skin-modal-overlay backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-skin-card-bg rounded-2xl w-full max-w-sm p-6" dir="rtl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-skin-text-primary">
+                {editingWorkplace ? "עריכת מקום עבודה" : "מקום עבודה חדש"}
+              </h3>
+              <button onClick={() => setIsWorkplaceModalOpen(false)} className="text-skin-text-tertiary hover:text-skin-text-primary">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-skin-text-secondary mb-1">שם המקום</label>
+                <input
+                  type="text"
+                  value={wpForm.name}
+                  onChange={e => setWpForm({ ...wpForm, name: e.target.value })}
+                  className="w-full bg-skin-bg-secondary border border-skin-border-secondary rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-skin-accent-primary/20"
+                  placeholder="לדוגמה: משרד ראשי"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-skin-text-secondary mb-1">צבע</label>
+                <div className="flex gap-2 flex-wrap">
+                  {['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#6366F1'].map(color => (
+                    <button
+                      key={color}
+                      onClick={() => setWpForm({ ...wpForm, color })}
+                      className={`w-8 h-8 rounded-full border-2 transition-all ${wpForm.color === color ? 'border-skin-accent-primary scale-110' : 'border-transparent hover:scale-105'}`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="isDefault"
+                  checked={wpForm.isDefault}
+                  onChange={e => setWpForm({ ...wpForm, isDefault: e.target.checked })}
+                  className="w-4 h-4 rounded border-skin-border-secondary text-skin-accent-primary focus:ring-skin-accent-primary"
+                />
+                <label htmlFor="isDefault" className="text-sm text-skin-text-primary">הגדר כברירת מחדל</label>
+              </div>
+
+              <button
+                onClick={handleSaveWorkplace}
+                className="w-full bg-skin-accent-primary text-white py-3 rounded-xl font-medium active:scale-95 transition-transform mt-2"
+              >
+                שמור
               </button>
             </div>
           </div>

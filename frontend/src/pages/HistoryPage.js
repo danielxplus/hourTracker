@@ -1,3 +1,4 @@
+import { useWorkplace } from "../context/WorkplaceContext";
 import { useEffect, useState, useMemo } from "react";
 import dayjs from "dayjs";
 import { Clock, MoreVertical, Wallet, Pencil, Trash2, X, List, Calendar } from "lucide-react";
@@ -9,6 +10,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 export default function HistoryPage() {
+    const { activeWorkplaceId } = useWorkplace(); // Use Context
     // Default to 60 or a safe number so we never send 0 if settings fail to load
     const [overtimeRateFromSettings, setOvertimeRateFromSettings] = useState(60);
     const [isPremium, setIsPremium] = useState(true);
@@ -58,15 +60,18 @@ export default function HistoryPage() {
 
     // --- Load Data ---
     async function loadHistory() {
+        if (!activeWorkplaceId) return;
         try {
-            const res = await api.get("/history");
+            const res = await api.get("/history", { params: { workplaceId: activeWorkplaceId } });
             setItems(res.data.items ?? []);
         } catch { /* ignore */ }
     }
 
     useEffect(() => {
+        if (!activeWorkplaceId) return;
+
         loadHistory();
-        api.get("/shift-types").then(res => setShiftTypes(res.data)).catch(() => { });
+        api.get("/shift-types", { params: { workplaceId: activeWorkplaceId } }).then(res => setShiftTypes(res.data)).catch(() => { });
         api.get("/settings").then(res => {
             if (res.data.overtimeHourlyRate) {
                 setOvertimeRateFromSettings(res.data.overtimeHourlyRate);
@@ -77,7 +82,8 @@ export default function HistoryPage() {
         const handleClickOutside = () => setActiveMenuId(null);
         window.addEventListener('click', handleClickOutside);
         return () => window.removeEventListener('click', handleClickOutside);
-    }, []);
+    }, [activeWorkplaceId]);
+
 
     // --- Handlers ---
     const handleEditShift = (shift) => {
@@ -118,6 +124,7 @@ export default function HistoryPage() {
 
         try {
             const payload = {
+                workplaceId: activeWorkplaceId, // Add workplaceId
                 shiftCode: selectedShiftCode,
                 date: selectedDate,
                 startTime,

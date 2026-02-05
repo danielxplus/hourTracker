@@ -3,6 +3,7 @@ import { Clock, X, Plus, Wallet, Pencil, Trash2, MoreVertical, AlertTriangle, Ca
 import ShiftForm from "../components/ShiftForm";
 import WeeklyShiftModal from "../components/WeeklyShiftModal";
 import { useAuth } from "../context/AuthContext";
+import { useWorkplace } from "../context/WorkplaceContext";
 import { shiftConfig, getShiftTypeMap } from "../utils/shiftUtils";
 import api from "../api/client";
 import dayjs from "dayjs";
@@ -18,6 +19,7 @@ function getGreeting(hour) {
 
 export default function HomePage() {
     const { user, refreshUser } = useAuth();
+    const { activeWorkplaceId, activeWorkplace } = useWorkplace(); // Use Context
     const [summary, setSummary] = useState(null);
     const [recentShifts, setRecentShifts] = useState([]);
     const [shiftTypes, setShiftTypes] = useState([]);
@@ -57,10 +59,13 @@ export default function HomePage() {
     }, []);
 
     async function refreshSummary() {
+        if (!activeWorkplaceId) return; // Wait for active workplace
+
         try {
+            setIsLoading(true);
             const [summaryRes, historyRes, settingsRes] = await Promise.all([
-                api.get("/summary"),
-                api.get("/history"),
+                api.get("/summary", { params: { workplaceId: activeWorkplaceId } }),
+                api.get("/history", { params: { workplaceId: activeWorkplaceId } }),
                 api.get("/settings")
             ]);
 
@@ -89,10 +94,13 @@ export default function HomePage() {
     }
 
     useEffect(() => {
-        refreshUser();
-        refreshSummary();
-        api.get("/shift-types").then(res => setShiftTypes(res.data));
-    }, []);
+        if (activeWorkplaceId) {
+            refreshUser();
+            refreshSummary();
+            api.get("/shift-types", { params: { workplaceId: activeWorkplaceId } }).then(res => setShiftTypes(res.data));
+        }
+    }, [activeWorkplaceId]); // Re-run when workplace changes
+
 
     // Memoized helper functions for shift calculations
     const formatTime = useMemo(() => (val) => {
@@ -260,6 +268,7 @@ export default function HomePage() {
         // --- 3. Send to Server ---
         try {
             const payload = {
+                workplaceId: activeWorkplaceId, // Add workplaceId
                 shiftCode: selectedShiftCode,
                 date: selectedDate,
                 startTime,
@@ -336,6 +345,7 @@ export default function HomePage() {
             // Create all shifts in parallel
             const promises = shiftsData.map(shift =>
                 api.post("/shifts", {
+                    workplaceId: activeWorkplaceId, // Add workplaceId
                     shiftCode: shift.shiftCode,
                     date: shift.date,
                     startTime: shift.startTime,
@@ -347,6 +357,7 @@ export default function HomePage() {
 
             await Promise.all(promises);
             refreshSummary();
+
             refreshUser();
         } catch (error) {
             console.error("Error saving weekly shifts:", error);
@@ -360,10 +371,17 @@ export default function HomePage() {
                 <h1 className="text-xl font-medium text-skin-text-primary mb-0.5">
                     {greeting}, {userName}
                 </h1>
-                <p className="text-xs text-skin-text-tertiary">
-                    {new Date().toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" })}
-                </p>
+                <div className="flex items-center gap-2 text-xs text-skin-text-tertiary">
+                    <span>{new Date().toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" })}</span>
+                    {activeWorkplace && (
+                        <>
+                            <span className="w-1 h-1 rounded-full bg-skin-border-secondary"></span>
+                            <span>{activeWorkplace.name}</span>
+                        </>
+                    )}
+                </div>
             </header>
+
 
             {/* Stats - Bento Grid */}
             <section className="mb-6" dir="rtl">

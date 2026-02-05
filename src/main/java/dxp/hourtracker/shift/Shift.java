@@ -27,6 +27,9 @@ public class Shift {
 
     private String userId;
 
+    @Column(name = "workplace_id")
+    private Long workplaceId;
+
     private LocalDate date;
 
     private LocalTime startTime;
