@@ -24,10 +24,8 @@ public class ShiftController {
     private final ShiftRepository shiftRepository;
 
     @GetMapping("/shift-types")
-    public List<Map<String, Object>> getShiftTypes() {
-        return shiftTypeRepository.findAll().stream()
-                .map(this::toDto)
-                .toList();
+    public List<ShiftType> getShiftTypes() {
+        return shiftTypeRepository.findAllByOrderBySortOrderAsc();
     }
 
     @PostMapping("/shifts")

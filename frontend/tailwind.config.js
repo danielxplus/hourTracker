@@ -11,7 +11,7 @@ module.exports = {
       colors: {
         primary: {
           DEFAULT: "#7C3AED",
-          soft: "#A855F7",
+          soft: "#9d44ee",
         },
         accent: {
           green: "#10B981",
@@ -21,6 +21,24 @@ module.exports = {
           soft: "#F3F4F6",
           card: "#111827",
         },
+        skin: {
+          'bg-primary': 'var(--bg-primary)',
+          'bg-secondary': 'var(--bg-secondary)',
+          'bg-tertiary': 'var(--bg-tertiary)',
+          'text-primary': 'var(--text-primary)',
+          'text-secondary': 'var(--text-secondary)',
+          'text-tertiary': 'var(--text-tertiary)',
+          'border-primary': 'var(--border-primary)',
+          'border-secondary': 'var(--border-secondary)',
+          'accent-primary': 'var(--accent-primary)',
+          'accent-secondary': 'var(--accent-secondary)',
+          'accent-primary-bg': 'var(--accent-primary-bg)',
+          'accent-secondary-bg': 'var(--accent-secondary-bg)',
+          'card-bg': 'var(--card-bg)',
+          'card-border': 'var(--card-border)',
+          'nav-bg': 'var(--nav-bg)',
+          'modal-overlay': 'var(--modal-overlay)',
+        }
       },
       boxShadow: {
         soft: "0 10px 30px rgba(15, 23, 42, 0.12)",

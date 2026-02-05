@@ -33,16 +33,16 @@ public class DataInitializer implements CommandLineRunner {
                         LocalTime.of(22, 30), LocalTime.of(7, 15), 8.45, 0);
 
                 // Middle: 12:00 - 21:00 (9h) -> 8h Pay (60m deduction)
-                createIfMissing("MIDDLE", "משמרת ביניים",
+                createIfMissing("MIDDLE", "משמרת מידל",
                         LocalTime.of(12, 0), LocalTime.of(21, 0), 8.0, 60);
-
-                // 4PM: 16:00 - 00:30 (8.5h) -> 8h Pay (30m deduction)
-                createIfMissing("4PM_UNTIL_12", "16:00 - 00:30",
-                        LocalTime.of(16, 0), LocalTime.of(0, 30), 8.0, 30);
 
                 // 7AM: 07:30 - 16:30 (9h) -> 8h Pay (60m deduction)
                 createIfMissing("7AM_UNTIL_4", "07:30 - 16:30",
                         LocalTime.of(7, 30), LocalTime.of(16, 30), 8.0, 60);
+
+                // 4PM: 16:00 - 00:30 (8.5h) -> 8h Pay (30m deduction)
+                createIfMissing("4PM_UNTIL_12", "16:00 - 00:30",
+                        LocalTime.of(16, 0), LocalTime.of(0, 30), 8.0, 30);
         }
 
         private void createIfMissing(
@@ -52,15 +52,16 @@ public class DataInitializer implements CommandLineRunner {
                         LocalTime defaultEnd,
                         Double defaultHours,
                         Integer deductionMinutes) {
-                shiftTypeRepository.findByCode(code)
-                                .orElseGet(() -> shiftTypeRepository.save(
-                                                ShiftType.builder()
-                                                                .code(code)
-                                                                .nameHe(nameHe)
-                                                                .defaultStart(defaultStart)
-                                                                .defaultEnd(defaultEnd)
-                                                                .defaultHours(defaultHours)
-                                                        .unpaidBreakMinutes(deductionMinutes)
-                                                                .build()));
+
+                ShiftType shiftType = shiftTypeRepository.findByCode(code)
+                        .orElse(ShiftType.builder().code(code).build());
+
+                shiftType.setNameHe(nameHe);
+                shiftType.setDefaultStart(defaultStart);
+                shiftType.setDefaultEnd(defaultEnd);
+                shiftType.setDefaultHours(defaultHours);
+                shiftType.setUnpaidBreakMinutes(deductionMinutes);
+
+                shiftTypeRepository.save(shiftType);
         }
 }

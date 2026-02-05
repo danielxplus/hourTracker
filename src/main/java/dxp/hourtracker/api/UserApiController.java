@@ -17,7 +17,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.YearMonth;
+import java.time.DayOfWeek;
+import java.time.temporal.TemporalAdjusters;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,6 +72,24 @@ public class UserApiController {
 
         response.put("displayName", user.getDisplayName() != null ? user.getDisplayName() : "אורח");
         response.put("email", user.getEmail());
+
+        // Add settings info (isPremium and theme)
+        UserSettings settings = userSettingsRepository.findByUserId(externalId)
+                .orElseGet(() -> {
+                    UserSettings s = new UserSettings();
+                    s.setUserId(externalId);
+                    s.setHourlyRate(51.0);
+                    s.setOvertimeHourlyRate(51.0 * 1.25);
+                    s.setShabatHourlyRate(51.0 * 1.50);
+                    s.setPremiumExpiresAt(LocalDateTime.now().plusDays(7));
+                    return userSettingsRepository.save(s);
+                });
+
+        response.put("isPremium", settings.getIsPremium());
+        response.put("premiumExpiresAt", settings.getPremiumExpiresAt());
+        response.put("themePreference",
+                settings.getThemePreference() != null ? settings.getThemePreference() : "default");
+
         return response;
     }
 
@@ -96,33 +118,86 @@ public class UserApiController {
                         return userSettingsRepository.save(s);
                     });
 
+            // --- Monthly Calculation (Start from 1st of month at 06:29) ---
             YearMonth thisMonth = YearMonth.now();
-            LocalDate startOfMonth = thisMonth.atDay(1);
-            LocalDate endOfMonth = thisMonth.atEndOfMonth();
+            LocalDate startOfMonthDate = thisMonth.atDay(1);
+            LocalDate endOfMonthDate = thisMonth.atEndOfMonth();
+            LocalDateTime tempBoundaryMonth = LocalDateTime.of(startOfMonthDate, LocalTime.of(6, 29));
+            if (LocalDateTime.now().isBefore(tempBoundaryMonth)) {
+                tempBoundaryMonth = tempBoundaryMonth.minusMonths(1);
+            }
+            final LocalDateTime effectiveBoundaryMonth = tempBoundaryMonth;
+
+            // Fetch roughly by date range first
+            List<Shift> monthShiftsCandidates = shiftRepository.findByUserIdAndDateBetweenOrderByDateDesc(
+                    userId, startOfMonthDate.minusDays(1), endOfMonthDate);
+            // Note: minusDays(1) because a shift on the 1st ending *after* 6:30 might
+            // technically belong?
+            // Actually, if date is 1st, startTime >= 06:30.
+
+            // Re-fetch strictly by date range [1st, End] is usually enough if date
+            // represents "shift date".
+            // But let's stick to the requested logic: count from X time.
+            // If shift date is BEFORE cutoff, we ignore. If shift date is defined as "start
+            // date",
+            // we just need date >= 1st. AND if date == 1st, startTime >= 06:30.
 
             List<Shift> monthShifts = shiftRepository.findByUserIdAndDateBetweenOrderByDateDesc(
-                    userId, startOfMonth, endOfMonth);
+                    userId, startOfMonthDate, endOfMonthDate);
 
             double monthHours = monthShifts.stream()
+                    .filter(s -> {
+                        LocalDateTime shiftStart = LocalDateTime.of(s.getDate(),
+                                s.getStartTime() != null ? s.getStartTime() : LocalTime.MIN);
+                        return !shiftStart.isBefore(effectiveBoundaryMonth);
+                    })
                     .mapToDouble(s -> (s.getHours() != null ? s.getHours() : 0.0))
                     .sum();
 
-            LocalDate weekAgo = LocalDate.now().minusDays(7);
+            // --- Weekly Calculation (Start from most recent Sunday at 06:29) ---
+            LocalDate today = LocalDate.now();
+            // Find most recent Sunday (or today if today is Sunday)
+            LocalDate previousSunday = today
+                    .with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
+            LocalDateTime tempBoundaryWeek = LocalDateTime.of(previousSunday, LocalTime.of(6, 29));
+            if (LocalDateTime.now().isBefore(tempBoundaryWeek)) {
+                tempBoundaryWeek = tempBoundaryWeek.minusWeeks(1);
+            }
+            final LocalDateTime effectiveBoundaryWeek = tempBoundaryWeek;
+
             List<Shift> weekShifts = shiftRepository.findByUserIdAndDateBetweenOrderByDateDesc(
-                    userId, weekAgo, LocalDate.now());
+                    userId, previousSunday, today);
 
             double weekHours = weekShifts.stream()
+                    .filter(s -> {
+                        LocalDateTime shiftStart = LocalDateTime.of(s.getDate(),
+                                s.getStartTime() != null ? s.getStartTime() : LocalTime.MIN);
+                        return !shiftStart.isBefore(effectiveBoundaryWeek);
+                    })
                     .mapToDouble(s -> (s.getHours() != null ? s.getHours() : 0.0))
                     .sum();
 
-            double hourlyRate = settings.getHourlyRate() != null ? settings.getHourlyRate() : 0.0;
+            // Calculate expected salary based on the MONTHLY specific shifts (filtered)
+            // Or should expected salary match the "Month Hours"? Yes, consistent.
             double expectedSalary = monthShifts.stream()
+                    .filter(s -> {
+                        LocalDateTime shiftStart = LocalDateTime.of(s.getDate(),
+                                s.getStartTime() != null ? s.getStartTime() : LocalTime.MIN);
+                        return !shiftStart.isBefore(effectiveBoundaryMonth);
+                    })
                     .mapToDouble(s -> (s.getSalary() != null ? s.getSalary() : 0.0))
                     .sum();
 
             double totalTips = monthShifts.stream()
+                    .filter(s -> {
+                        LocalDateTime shiftStart = LocalDateTime.of(s.getDate(),
+                                s.getStartTime() != null ? s.getStartTime() : LocalTime.MIN);
+                        return !shiftStart.isBefore(effectiveBoundaryMonth);
+                    })
                     .mapToDouble(s -> s.getTipAmount() != null ? s.getTipAmount() : 0.0)
                     .sum();
+
+            double hourlyRate = settings.getHourlyRate() != null ? settings.getHourlyRate() : 0.0;
 
             List<Map<String, Object>> recent = shiftRepository
                     .findTop5ByUserIdOrderByDateDesc(userId)
@@ -139,6 +214,10 @@ public class UserApiController {
                         m.put("tip", s.getTipAmount());
                         m.put("overtimeHours", s.getOvertimeHours());
                         m.put("overtimeSalary", s.getOvertimeSalary());
+
+                        m.put("salary", s.getSalary());
+                        m.put("tipAmount", s.getTipAmount());
+
                         return m;
                     })
                     .toList();
@@ -163,6 +242,9 @@ public class UserApiController {
             response.put("hourlyRate", 0);
             response.put("overtimeHourlyRate", 0);
             response.put("shabatHourlyRate", 0);
+            response.put("isPremium", false);
+            response.put("premiumExpiresAt", null);
+            response.put("themePreference", "default");
             return response;
         }
         String userId = principal.getName();
@@ -178,6 +260,7 @@ public class UserApiController {
                     s.setHourlyRate(defaultBase);
                     s.setOvertimeHourlyRate(defaultBase * 1.25);
                     s.setShabatHourlyRate(defaultBase * 1.50);
+                    s.setPremiumExpiresAt(LocalDateTime.now().plusDays(7));
                     return userSettingsRepository.save(s);
                 });
 
@@ -198,6 +281,10 @@ public class UserApiController {
         response.put("hourlyRate", currentRate);
         response.put("overtimeHourlyRate", currentOvertime);
         response.put("shabatHourlyRate", currentShabat);
+        response.put("isPremium", settings.getIsPremium());
+        response.put("premiumExpiresAt", settings.getPremiumExpiresAt());
+        response.put("themePreference",
+                settings.getThemePreference() != null ? settings.getThemePreference() : "default");
         return response;
     }
 
@@ -261,6 +348,48 @@ public class UserApiController {
         response.put("overtimeHourlyRate", settings.getOvertimeHourlyRate());
         response.put("shabatHourlyRate", settings.getShabatHourlyRate());
         response.put("themePreference", settings.getThemePreference());
+<<<<<<< HEAD
+=======
+        return response;
+    }
+
+    @PostMapping("/settings/add-premium")
+    public Map<String, Object> addPremiumDays(
+            @AuthenticationPrincipal OAuth2User principal,
+            @RequestBody Map<String, Object> body) {
+
+        Map<String, Object> response = new HashMap<>();
+        if (principal == null)
+            return response;
+
+        String userId = principal.getName();
+        Integer daysToAdd = (Integer) body.get("days");
+        if (daysToAdd == null || daysToAdd <= 0) {
+            daysToAdd = 30; // default
+        }
+
+        UserSettings settings = userSettingsRepository.findByUserId(userId)
+                .orElseGet(() -> {
+                    UserSettings s = new UserSettings();
+                    s.setUserId(userId);
+                    s.setHourlyRate(51.0);
+                    return userSettingsRepository.save(s);
+                });
+
+        java.time.LocalDateTime currentExpiry = settings.getPremiumExpiresAt();
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+
+        if (currentExpiry == null || currentExpiry.isBefore(now)) {
+            settings.setPremiumExpiresAt(now.plusDays(daysToAdd));
+        } else {
+            settings.setPremiumExpiresAt(currentExpiry.plusDays(daysToAdd));
+        }
+
+        userSettingsRepository.save(settings);
+
+        response.put("isPremium", settings.getIsPremium());
+        response.put("premiumExpiresAt", settings.getPremiumExpiresAt());
+>>>>>>> dev-update
         return response;
     }
 
@@ -322,6 +451,8 @@ public class UserApiController {
                     Map<String, Object> m = new HashMap<>();
                     m.put("id", s.getId());
                     m.put("date", s.getDate());
+                    m.put("startTime", s.getStartTime());
+                    m.put("endTime", s.getEndTime());
                     m.put("shiftType", s.getShiftType());
                     m.put("hours", s.getHours());
                     m.put("salary", s.getSalary());

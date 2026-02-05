@@ -3,6 +3,7 @@ package dxp.hourtracker.repository;
 import dxp.hourtracker.entity.ShiftType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ShiftTypeRepository extends JpaRepository<ShiftType, Long> {
@@ -10,4 +11,6 @@ public interface ShiftTypeRepository extends JpaRepository<ShiftType, Long> {
     Optional<ShiftType> findByCode(String code);
 
     Optional<ShiftType> findByNameHe(String nameHe);
+
+    List<ShiftType> findAllByOrderBySortOrderAsc();
 }
