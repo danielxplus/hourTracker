@@ -67,7 +67,7 @@ const themes = {
             '--text-inverse': '#171717',
             '--text-inverse-light': '#3f3f46',
             '--border-secondary': '#1b1b1e',
-            '--accent-primary': '#144d37',
+            '--accent-primary': '#0F9825',
             '--accent-secondary': '#A62E6C',
             '--accent-primary-bg': '#064e3b',
             '--accent-secondary-bg': '#581c87',
