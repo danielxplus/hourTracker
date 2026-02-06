@@ -266,7 +266,7 @@ export default function HistoryPage() {
                                 key={f}
                                 onClick={() => setFilter(f)}
                                 className={`flex-1 rounded-xl px-3 py-2.5 font-semibold transition-all duration-200 ${filter === f
-                                    ? "bg-skin-card-bg shadow-md text-skin-accent-primary scale-[1.02] ring-1 ring-skin-border-secondary/30"
+                                    ? "bg-skin-card-bg shadow-md text-skin-accent-primary scale-[1.02] ring-1 ring-skin-accent-primary/30"
                                     : "text-skin-text-tertiary hover:text-skin-text-secondary hover:bg-skin-bg-primary/50"
                                     }`}
                             >
