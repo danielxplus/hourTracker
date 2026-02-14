@@ -97,8 +97,6 @@ public class WorkplaceTemplateService {
             shiftTypeRepository.save(shiftType);
         }
 
-        return workplace;
-
         // Migrate legacy shifts (where workplaceId is NULL) to this new workplace
         // Only if it's the default one (or maybe any new one if we want to catch all
         // stragglers?)
