@@ -26,11 +26,20 @@ public class WorkplaceController {
     }
 
     @PostMapping("/select")
-    public Workplace selectTemplate(@AuthenticationPrincipal OAuth2User principal, @RequestParam String templateId) {
+    public ResponseEntity<?> selectTemplate(@AuthenticationPrincipal OAuth2User principal,
+            @RequestParam String templateId) {
         if (principal == null)
-            throw new IllegalStateException("Unauthorized");
+            return ResponseEntity.status(401).build();
         String userId = principal.getName();
-        return templateService.assignTemplateToUser(userId, templateId);
+        try {
+            Workplace workplace = templateService.assignTemplateToUser(userId, templateId);
+            return ResponseEntity.ok(workplace);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(java.util.Collections.singletonMap("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body(java.util.Collections.singletonMap("error", "Failed to select template"));
+        }
     }
 
     @GetMapping

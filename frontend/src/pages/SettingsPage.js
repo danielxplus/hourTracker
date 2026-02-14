@@ -183,18 +183,18 @@ export default function SettingsPage() {
                 <User className="w-4 h-4 text-skin-accent-primary" />
               </div>
               <input
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  className="flex-1 bg-transparent text-sm text-skin-text-primary placeholder:text-skin-text-tertiary focus:outline-none"
-                  placeholder="שם תצוגה"
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="flex-1 bg-transparent text-sm text-skin-text-primary placeholder:text-skin-text-tertiary focus:outline-none"
+                placeholder="שם תצוגה"
               />
             </div>
             <button
-                type="button"
-                onClick={handleSaveName}
-                disabled={isSaving || !displayName.trim()}
-                className="px-3.5 py-1.5 rounded-lg bg-skin-accent-primary text-white text-xs font-medium disabled:opacity-50 hover:opacity-90 transition-colors flex-shrink-0 shadow-sm"
+              type="button"
+              onClick={handleSaveName}
+              disabled={isSaving || !displayName.trim()}
+              className="px-3.5 py-1.5 rounded-lg bg-skin-accent-primary text-white text-xs font-medium disabled:opacity-50 hover:opacity-90 transition-colors flex-shrink-0 shadow-sm"
             >
               {savedSection === "name" ? <Check className="w-3.5 h-3.5" /> : "שמור"}
             </button>
@@ -572,7 +572,7 @@ export default function SettingsPage() {
 
       {/* NEW Workplace Template Selection Modal */}
       {isSelectionModalOpen && (
-        <div className="fixed inset-0 bg-skin-modal-overlay backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 bg-skin-modal-overlay backdrop-blur-sm flex items-end sm:items-center justify-center z-[60] p-0 sm:p-4 animate-in fade-in duration-200">
           <div className="bg-skin-card-bg rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl transform transition-transform animate-in slide-in-from-bottom-full duration-300" dir="rtl">
             <div className="p-6 border-b border-skin-border-secondary flex items-center justify-between">
               <div>

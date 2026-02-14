@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dxp.hourtracker.entity.ShiftType;
 import dxp.hourtracker.repository.ShiftTypeRepository;
+import dxp.hourtracker.shift.ShiftRepository;
 import dxp.hourtracker.workplace.Workplace;
 import dxp.hourtracker.workplace.WorkplaceRepository;
 import jakarta.annotation.PostConstruct;
@@ -28,6 +29,7 @@ public class WorkplaceTemplateService {
 
     private final WorkplaceRepository workplaceRepository;
     private final ShiftTypeRepository shiftTypeRepository;
+    private final ShiftRepository shiftRepository;
     private final ResourceLoader resourceLoader;
     private final ObjectMapper objectMapper;
 
@@ -93,6 +95,17 @@ public class WorkplaceTemplateService {
                     .sortOrder(stt.getSortOrder())
                     .build();
             shiftTypeRepository.save(shiftType);
+        }
+
+        return workplace;
+
+        // Migrate legacy shifts (where workplaceId is NULL) to this new workplace
+        // Only if it's the default one (or maybe any new one if we want to catch all
+        // stragglers?)
+        // Let's migrate ALL null-workplace shifts to the FIRST created workplace (which
+        // is usually default).
+        if (workplace.isDefault()) {
+            shiftRepository.updateWorkplaceIdForUser(userId, workplace.getId());
         }
 
         return workplace;

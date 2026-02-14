@@ -60,13 +60,14 @@ export default function HomePage() {
     }, []);
 
     async function refreshSummary() {
-        if (!activeWorkplaceId) return; // Wait for active workplace
+        // if (!activeWorkplaceId) return; // Allow running without workplace (global view)
 
         try {
             setIsLoading(true);
+            const params = activeWorkplaceId ? { workplaceId: activeWorkplaceId } : {};
             const [summaryRes, historyRes, settingsRes] = await Promise.all([
-                api.get("/summary", { params: { workplaceId: activeWorkplaceId } }),
-                api.get("/history", { params: { workplaceId: activeWorkplaceId } }),
+                api.get("/summary", { params }),
+                api.get("/history", { params }),
                 api.get("/settings")
             ]);
 
@@ -95,11 +96,11 @@ export default function HomePage() {
     }
 
     useEffect(() => {
-        if (activeWorkplaceId) {
-            refreshUser();
-            refreshSummary();
-            api.get("/shift-types", { params: { workplaceId: activeWorkplaceId } }).then(res => setShiftTypes(res.data));
-        }
+        // Always refresh
+        refreshUser();
+        refreshSummary();
+        const params = activeWorkplaceId ? { workplaceId: activeWorkplaceId } : {};
+        api.get("/shift-types", { params }).then(res => setShiftTypes(res.data));
     }, [activeWorkplaceId]); // Re-run when workplace changes
 
 
