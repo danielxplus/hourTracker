@@ -18,6 +18,20 @@ public class WorkplaceController {
 
     private final WorkplaceRepository workplaceRepository;
     private final ShiftRepository shiftRepository;
+    private final dxp.hourtracker.service.WorkplaceTemplateService templateService;
+
+    @GetMapping("/templates")
+    public List<dxp.hourtracker.service.WorkplaceTemplateService.WorkplaceTemplate> getTemplates() {
+        return templateService.getTemplates();
+    }
+
+    @PostMapping("/select")
+    public Workplace selectTemplate(@AuthenticationPrincipal OAuth2User principal, @RequestParam String templateId) {
+        if (principal == null)
+            throw new IllegalStateException("Unauthorized");
+        String userId = principal.getName();
+        return templateService.assignTemplateToUser(userId, templateId);
+    }
 
     @GetMapping
     public List<Workplace> getUserWorkplaces(@AuthenticationPrincipal OAuth2User principal) {
@@ -28,24 +42,10 @@ public class WorkplaceController {
         List<Workplace> workplaces = workplaceRepository.findByUserId(userId);
 
         if (workplaces.isEmpty()) {
-            // Migration for legacy users: Create default workplace and assign existing
-            // shifts
-            Workplace defaultWp = new Workplace();
-            defaultWp.setUserId(userId);
-            defaultWp.setName("ברירת מחדל");
-            defaultWp.setColor("#3B82F6"); // Blue
-            defaultWp.setDefault(true);
-            // Default rates
-            defaultWp.setHourlyRate(50.0);
-            defaultWp.setOvertimeHourlyRate(62.5);
-            defaultWp.setShabatHourlyRate(75.0);
-
-            defaultWp = workplaceRepository.save(defaultWp);
-
-            // Migrate existing shifts
-            shiftRepository.updateWorkplaceIdForUser(userId, defaultWp.getId());
-
-            return List.of(defaultWp);
+            // New logic: Don't auto-create legacy "Default".
+            // Return empty and let frontend prompt selection or create a default if needed?
+            // Actually, keep migration/fallback for safety but maybe use a template?
+            return List.of();
         }
 
         return workplaces;
@@ -55,19 +55,9 @@ public class WorkplaceController {
     public Workplace createWorkplace(@AuthenticationPrincipal OAuth2User principal, @RequestBody Workplace workplace) {
         if (principal == null)
             throw new IllegalStateException("Unauthorized");
-        String userId = principal.getName();
-        workplace.setUserId(userId);
 
-        if (workplace.isDefault()) {
-            unsetOtherDefaults(userId);
-        } else {
-            // If this is the FIRST/ONLY workplace, force it to be default
-            List<Workplace> existing = workplaceRepository.findByUserId(userId);
-            if (existing.isEmpty()) {
-                workplace.setDefault(true);
-            }
-        }
-        return workplaceRepository.save(workplace);
+        // Disable custom creation as per requirements
+        throw new UnsupportedOperationException("Custom workplace creation is disabled. Use /select instead.");
     }
 
     @PutMapping("/{id}")
@@ -82,11 +72,18 @@ public class WorkplaceController {
         return workplaceRepository.findById(id)
                 .filter(w -> w.getUserId().equals(userId))
                 .map(w -> {
-                    w.setName(updates.getName());
-                    w.setHourlyRate(updates.getHourlyRate());
-                    w.setOvertimeHourlyRate(updates.getOvertimeHourlyRate());
-                    w.setShabatHourlyRate(updates.getShabatHourlyRate());
-                    w.setColor(updates.getColor());
+                    // Locked workplaces only allow rate updates
+                    if (w.isLocked()) {
+                        w.setHourlyRate(updates.getHourlyRate());
+                        w.setOvertimeHourlyRate(updates.getOvertimeHourlyRate());
+                        w.setShabatHourlyRate(updates.getShabatHourlyRate());
+                    } else {
+                        w.setName(updates.getName());
+                        w.setHourlyRate(updates.getHourlyRate());
+                        w.setOvertimeHourlyRate(updates.getOvertimeHourlyRate());
+                        w.setShabatHourlyRate(updates.getShabatHourlyRate());
+                        w.setColor(updates.getColor());
+                    }
 
                     if (updates.isDefault() && !w.isDefault()) {
                         unsetOtherDefaults(userId);
@@ -111,6 +108,8 @@ public class WorkplaceController {
         return workplaceRepository.findById(id)
                 .filter(w -> w.getUserId().equals(userId))
                 .map(w -> {
+                    // Prevent deleting the only workplace if it's the active one?
+                    // For now, allow deletion but maybe add a guard later.
                     workplaceRepository.delete(w);
                     return ResponseEntity.ok().<Void>build();
                 })

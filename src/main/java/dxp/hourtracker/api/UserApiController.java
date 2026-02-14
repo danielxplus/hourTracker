@@ -34,6 +34,7 @@ public class UserApiController {
     private final UserRepository userRepository;
     private final UserSettingsRepository userSettingsRepository;
     private final ShiftRepository shiftRepository;
+    private final dxp.hourtracker.service.IsraeliTaxCalculatorService taxCalculator;
 
     @GetMapping("/me")
     public Map<String, Object> me(@AuthenticationPrincipal OAuth2User principal) {
@@ -152,6 +153,26 @@ public class UserApiController {
                     .mapToDouble(s -> (s.getHours() != null ? s.getHours() : 0.0))
                     .sum();
 
+            double expectedSalary = monthShifts.stream()
+                    .filter(s -> {
+                        LocalDateTime shiftStart = LocalDateTime.of(s.getDate(),
+                                s.getStartTime() != null ? s.getStartTime() : LocalTime.MIN);
+                        return !shiftStart.isBefore(effectiveBoundaryMonth);
+                    })
+                    .mapToDouble(s -> (s.getSalary() != null ? s.getSalary() : 0.0))
+                    .sum();
+
+            double totalTips = monthShifts.stream()
+                    .filter(s -> {
+                        LocalDateTime shiftStart = LocalDateTime.of(s.getDate(),
+                                s.getStartTime() != null ? s.getStartTime() : LocalTime.MIN);
+                        return !shiftStart.isBefore(effectiveBoundaryMonth);
+                    })
+                    .mapToDouble(s -> (s.getTipAmount() != null ? s.getTipAmount() : 0.0))
+                    .sum();
+
+            Double hourlyRate = settings.getHourlyRate();
+
             // --- Weekly Calculation (Start from most recent Sunday at 06:29) ---
             LocalDate today = LocalDate.now();
             // Find most recent Sunday (or today if today is Sunday)
@@ -220,6 +241,23 @@ public class UserApiController {
             response.put("expectedMonthSalary", expectedSalary);
             response.put("recentShifts", recent);
             response.put("totalTips", totalTips);
+
+            // --- Net Salary Breakdown (Israeli Tax Calculator 2026) ---
+            try {
+                Map<String, Object> netBreakdown = taxCalculator.calculateNetSalary(
+                        expectedSalary,
+                        settings.getPaysTax() != null ? settings.getPaysTax() : true,
+                        settings.getPensionEnabled() != null ? settings.getPensionEnabled() : true,
+                        settings.getStudyFundEnabled() != null ? settings.getStudyFundEnabled() : false,
+                        settings.getIsFemale() != null ? settings.getIsFemale() : false,
+                        settings.getIsExSoldier() != null ? settings.getIsExSoldier() : false,
+                        settings.getDischargeDate());
+                response.put("netSalaryBreakdown", netBreakdown);
+            } catch (Exception e) {
+                // Don't let tax calculation crash the summary
+                response.put("netSalaryBreakdown", null);
+            }
+
             return response;
         } catch (Exception e) {
             e.printStackTrace();
@@ -237,6 +275,12 @@ public class UserApiController {
             response.put("isPremium", false);
             response.put("premiumExpiresAt", null);
             response.put("themePreference", "default");
+            response.put("paysTax", true);
+            response.put("pensionEnabled", true);
+            response.put("studyFundEnabled", false);
+            response.put("isFemale", false);
+            response.put("isExSoldier", false);
+            response.put("dischargeDate", null);
             return response;
         }
         String userId = principal.getName();
@@ -277,6 +321,16 @@ public class UserApiController {
         response.put("premiumExpiresAt", settings.getPremiumExpiresAt());
         response.put("themePreference",
                 settings.getThemePreference() != null ? settings.getThemePreference() : "default");
+
+        // Net Salary Predictor settings
+        response.put("paysTax", settings.getPaysTax() != null ? settings.getPaysTax() : true);
+        response.put("pensionEnabled", settings.getPensionEnabled() != null ? settings.getPensionEnabled() : true);
+        response.put("studyFundEnabled",
+                settings.getStudyFundEnabled() != null ? settings.getStudyFundEnabled() : false);
+        response.put("isFemale", settings.getIsFemale() != null ? settings.getIsFemale() : false);
+        response.put("isExSoldier", settings.getIsExSoldier() != null ? settings.getIsExSoldier() : false);
+        response.put("dischargeDate", settings.getDischargeDate());
+
         return response;
     }
 
@@ -290,6 +344,12 @@ public class UserApiController {
             response.put("overtimeHourlyRate", 0);
             response.put("shabatHourlyRate", 0);
             response.put("themePreference", "default");
+            response.put("paysTax", true);
+            response.put("pensionEnabled", true);
+            response.put("studyFundEnabled", false);
+            response.put("isFemale", false);
+            response.put("isExSoldier", false);
+            response.put("dischargeDate", null);
             return response;
         }
         String userId = principal.getName();
@@ -334,12 +394,43 @@ public class UserApiController {
             }
         }
 
+        // --- Net Salary Predictor Settings ---
+        if (body.containsKey("paysTax")) {
+            settings.setPaysTax((Boolean) body.get("paysTax"));
+        }
+        if (body.containsKey("pensionEnabled")) {
+            settings.setPensionEnabled((Boolean) body.get("pensionEnabled"));
+        }
+        if (body.containsKey("studyFundEnabled")) {
+            settings.setStudyFundEnabled((Boolean) body.get("studyFundEnabled"));
+        }
+        if (body.containsKey("isFemale")) {
+            settings.setIsFemale((Boolean) body.get("isFemale"));
+        }
+        if (body.containsKey("isExSoldier")) {
+            settings.setIsExSoldier((Boolean) body.get("isExSoldier"));
+        }
+        if (body.containsKey("dischargeDate")) {
+            String dateStr = (String) body.get("dischargeDate");
+            if (dateStr != null && !dateStr.isEmpty()) {
+                settings.setDischargeDate(java.time.LocalDate.parse(dateStr));
+            } else {
+                settings.setDischargeDate(null);
+            }
+        }
+
         userSettingsRepository.save(settings);
 
         response.put("hourlyRate", settings.getHourlyRate());
         response.put("overtimeHourlyRate", settings.getOvertimeHourlyRate());
         response.put("shabatHourlyRate", settings.getShabatHourlyRate());
         response.put("themePreference", settings.getThemePreference());
+        response.put("paysTax", settings.getPaysTax());
+        response.put("pensionEnabled", settings.getPensionEnabled());
+        response.put("studyFundEnabled", settings.getStudyFundEnabled());
+        response.put("isFemale", settings.getIsFemale());
+        response.put("isExSoldier", settings.getIsExSoldier());
+        response.put("dischargeDate", settings.getDischargeDate());
         return response;
     }
 

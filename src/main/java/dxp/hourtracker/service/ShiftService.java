@@ -55,8 +55,15 @@ public class ShiftService {
         // saveShiftWithCalculations will fetch and verify.
 
         LocalDate date = LocalDate.parse(dateRaw);
-        ShiftType type = shiftTypeRepository.findByCode(shiftCode)
-                .orElseThrow(() -> new IllegalArgumentException("Unknown shift type: " + shiftCode));
+        ShiftType type;
+        if (workplaceId != null) {
+            type = shiftTypeRepository.findByCodeAndWorkplaceId(shiftCode, workplaceId)
+                    .orElseGet(() -> shiftTypeRepository.findByCode(shiftCode)
+                            .orElseThrow(() -> new IllegalArgumentException("Unknown shift type: " + shiftCode)));
+        } else {
+            type = shiftTypeRepository.findByCode(shiftCode)
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown shift type: " + shiftCode));
+        }
 
         return saveShiftWithCalculations(userId, workplaceId, date, startTimeStr, endTimeStr, type, payload, null);
 
@@ -71,16 +78,34 @@ public class ShiftService {
             throw new IllegalArgumentException("Unauthorized to edit this shift");
         }
 
+        // Workplace ID: Use payload if present (moving shift?), else existing
+        Long workplaceId = existing.getWorkplaceId();
+        if (payload.containsKey("workplaceId") && payload.get("workplaceId") instanceof Number n) {
+            workplaceId = n.longValue();
+        }
+
         // Logic to determine ShiftType
         String code = (String) payload.get("shiftCode");
         ShiftType type;
         if (code != null) {
-            type = shiftTypeRepository.findByCode(code)
-                    .orElseThrow(() -> new IllegalArgumentException("Unknown shift type: " + code));
+            if (workplaceId != null) {
+                type = shiftTypeRepository.findByCodeAndWorkplaceId(code, workplaceId)
+                        .orElseGet(() -> shiftTypeRepository.findByCode(code)
+                                .orElseThrow(() -> new IllegalArgumentException("Unknown shift type: " + code)));
+            } else {
+                type = shiftTypeRepository.findByCode(code)
+                        .orElseThrow(() -> new IllegalArgumentException("Unknown shift type: " + code));
+            }
         } else {
             // Fallback: try to find by existing Hebrew name
-            type = shiftTypeRepository.findByNameHe(existing.getShiftType())
-                    .orElseThrow(() -> new IllegalArgumentException("Shift Type configuration not found"));
+            if (workplaceId != null) {
+                type = shiftTypeRepository.findByNameHeAndWorkplaceId(existing.getShiftType(), workplaceId)
+                        .orElseGet(() -> shiftTypeRepository.findByNameHe(existing.getShiftType())
+                                .orElseThrow(() -> new IllegalArgumentException("Shift Type configuration not found")));
+            } else {
+                type = shiftTypeRepository.findByNameHe(existing.getShiftType())
+                        .orElseThrow(() -> new IllegalArgumentException("Shift Type configuration not found"));
+            }
         }
 
         // Parse Date/Time, falling back to existing if null
@@ -89,12 +114,6 @@ public class ShiftService {
 
         String startTimeStr = (String) payload.getOrDefault("startTime", existing.getStartTime().toString());
         String endTimeStr = (String) payload.getOrDefault("endTime", existing.getEndTime().toString());
-
-        // Workplace ID: Use payload if present (moving shift?), else existing
-        Long workplaceId = existing.getWorkplaceId();
-        if (payload.containsKey("workplaceId") && payload.get("workplaceId") instanceof Number n) {
-            workplaceId = n.longValue();
-        }
 
         return saveShiftWithCalculations(userId, workplaceId, date, startTimeStr, endTimeStr, type, payload,
                 existing.getId());
@@ -115,8 +134,15 @@ public class ShiftService {
         existing.setEndTime(LocalTime.parse(nowTime));
 
         // Find type
-        ShiftType type = shiftTypeRepository.findByNameHe(existing.getShiftType())
-                .orElseThrow(() -> new IllegalArgumentException("Shift Type not found"));
+        ShiftType type;
+        if (existing.getWorkplaceId() != null) {
+            type = shiftTypeRepository.findByNameHeAndWorkplaceId(existing.getShiftType(), existing.getWorkplaceId())
+                    .orElseGet(() -> shiftTypeRepository.findByNameHe(existing.getShiftType())
+                            .orElseThrow(() -> new IllegalArgumentException("Shift Type not found")));
+        } else {
+            type = shiftTypeRepository.findByNameHe(existing.getShiftType())
+                    .orElseThrow(() -> new IllegalArgumentException("Shift Type not found"));
+        }
 
         // Preserve existing manual overtime if any
         Map<String, Object> payload = Map.of(
@@ -159,6 +185,9 @@ public class ShiftService {
         // 5. Get Rates (Preferred: Workplace, Fallback: UserSettings/Default)
         Double currentRate = 51.0;
         Double currentOvertimeRate = null;
+        Double currentShabatRate = null;
+        Integer shabbatStart = null;
+        Integer shabbatEnd = null;
 
         // Try fetch workplace
         if (workplaceId != null) {
@@ -168,7 +197,13 @@ public class ShiftService {
                     currentRate = wp.getHourlyRate();
                 if (wp.getOvertimeHourlyRate() != null)
                     currentOvertimeRate = wp.getOvertimeHourlyRate();
-                // TODO: Use Shabat rate if applicable
+
+                // Get Shabat settings
+                if (wp.getShabatHourlyRate() != null)
+                    currentShabatRate = wp.getShabatHourlyRate();
+
+                shabbatStart = wp.getShabbatStartHour();
+                shabbatEnd = wp.getShabbatEndHour();
             }
         } else {
             // Fallback to legacy UserSettings
@@ -179,10 +214,14 @@ public class ShiftService {
             if (settings != null && settings.getOvertimeHourlyRate() != null) {
                 currentOvertimeRate = settings.getOvertimeHourlyRate();
             }
+            if (settings != null && settings.getShabatHourlyRate() != null) {
+                currentShabatRate = settings.getShabatHourlyRate();
+            }
         }
 
         // 6. Calculate Base Salary
-        double baseSalary = wageCalculator.calculateShiftSalary(startDt, endDt, currentRate);
+        double baseSalary = wageCalculator.calculateShiftSalary(startDt, endDt, currentRate, currentShabatRate,
+                shabbatStart, shabbatEnd);
 
         // 7. Handle Manual Overtime (Added on top)
         Double overtimeHours = null;

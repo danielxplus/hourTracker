@@ -10,8 +10,11 @@ public interface ShiftTypeRepository extends JpaRepository<ShiftType, Long> {
 
     Optional<ShiftType> findByCode(String code);
 
-    Optional<ShiftType> findByNameHe(String nameHe); // This matches "name_he" column if mapped? Or just default
-                                                     // property.
+    Optional<ShiftType> findByCodeAndWorkplaceId(String code, Long workplaceId);
+
+    Optional<ShiftType> findByNameHe(String nameHe);
+
+    Optional<ShiftType> findByNameHeAndWorkplaceId(String nameHe, Long workplaceId);
 
     List<ShiftType> findAllByWorkplaceIdOrderBySortOrderAsc(Long workplaceId);
 

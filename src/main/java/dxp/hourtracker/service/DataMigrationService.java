@@ -21,11 +21,10 @@ import java.util.List;
 @Slf4j
 public class DataMigrationService {
 
-    private final UserRepository userRepository; // Assuming User entity exists or we iterate settings
     private final UserSettingsRepository userSettingsRepository;
     private final WorkplaceRepository workplaceRepository;
     private final ShiftRepository shiftRepository;
-    private final ShiftTypeRepository shiftTypeRepository;
+    private final WorkplaceTemplateService templateService;
 
     @PostConstruct
     @Transactional
@@ -43,62 +42,35 @@ public class DataMigrationService {
                 continue; // Already migrated or fresh user
             }
 
-            log.info("Migrating user {} to default workplace...", userId);
+            log.info("Migrating user {} to default workplace template...", userId);
 
-            // Create Default Workplace from UserSettings
-            Workplace defaultWorkplace = Workplace.builder()
-                    .userId(userId)
-                    .name("מקום עבודה ראשי") // Default name
-                    .hourlyRate(settings.getHourlyRate() != null ? settings.getHourlyRate() : 0.0)
-                    .overtimeHourlyRate(
-                            settings.getOvertimeHourlyRate() != null ? settings.getOvertimeHourlyRate() : 0.0)
-                    .shabatHourlyRate(settings.getShabatHourlyRate() != null ? settings.getShabatHourlyRate() : 0.0)
-                    .isDefault(true)
-                    .color("#3b82f6") // Default blue
-                    .build();
+            try {
+                // Assign Mamilla Security as default during migration
+                Workplace workplace = templateService.assignTemplateToUser(userId, "mamilla-security");
 
-            defaultWorkplace = workplaceRepository.save(defaultWorkplace);
-
-            // Update all existing Shifts for this user
-            List<Shift> userShifts = shiftRepository.findAllByUserId(userId); // You might need to add this method or
-                                                                              // use findAll
-            int shiftCount = 0;
-            for (Shift shift : userShifts) {
-                if (shift.getWorkplaceId() == null) {
-                    shift.setWorkplaceId(defaultWorkplace.getId());
-                    shiftRepository.save(shift);
-                    shiftCount++;
+                // Transfer legacy rates if they exist
+                if (settings.getHourlyRate() != null && settings.getHourlyRate() > 0) {
+                    workplace.setHourlyRate(settings.getHourlyRate());
+                    workplace.setOvertimeHourlyRate(settings.getOvertimeHourlyRate());
+                    workplace.setShabatHourlyRate(settings.getShabatHourlyRate());
+                    workplaceRepository.save(workplace);
                 }
+
+                // Update all existing Shifts for this user
+                List<Shift> userShifts = shiftRepository.findAllByUserIdOrderByDateDesc(userId);
+                int shiftCount = 0;
+                for (Shift shift : userShifts) {
+                    if (shift.getWorkplaceId() == null) {
+                        shift.setWorkplaceId(workplace.getId());
+                        shiftRepository.save(shift);
+                        shiftCount++;
+                    }
+                }
+
+                log.info("Migrated {} shifts to workplace {}", shiftCount, workplace.getId());
+            } catch (Exception e) {
+                log.error("Failed to migrate user {}: {}", userId, e.getMessage());
             }
-
-            log.info("Migrated {} shifts to workplace {}", shiftCount, defaultWorkplace.getId());
-
-            // Clone System Default Shift Types to this new Workplace
-            List<ShiftType> systemTypes = shiftTypeRepository.findAllByWorkplaceIdIsNullOrderBySortOrderAsc();
-            if (systemTypes.isEmpty()) {
-                // Fallback: If no system types found, try all (legacy support)
-                systemTypes = shiftTypeRepository.findAllByOrderBySortOrderAsc();
-            }
-
-            for (ShiftType sysType : systemTypes) {
-                // Skip if it already has a workplaceId
-                if (sysType.getWorkplaceId() != null)
-                    continue;
-
-                ShiftType clone = ShiftType.builder()
-                        .code(sysType.getCode())
-                        .nameHe(sysType.getNameHe())
-                        .defaultStart(sysType.getDefaultStart())
-                        .defaultEnd(sysType.getDefaultEnd())
-                        .defaultHours(sysType.getDefaultHours())
-                        .unpaidBreakMinutes(sysType.getUnpaidBreakMinutes())
-                        .sortOrder(sysType.getSortOrder())
-                        .workplaceId(defaultWorkplace.getId())
-                        .build();
-
-                shiftTypeRepository.save(clone);
-            }
-            log.info("Cloned {} shift types for workplace {}", systemTypes.size(), defaultWorkplace.getId());
         }
     }
 }

@@ -30,7 +30,18 @@ public class Workplace {
 
     private Double shabatHourlyRate;
 
+    @Builder.Default
+    private Integer shabbatStartHour = 15; // Friday 15:00 default
+
+    @Builder.Default
+    private Integer shabbatEndHour = 5; // Sunday 05:00 default
+
     private String color; // Hex code for UI distinction
+
+    private String templateId; // ID from workplaces.json
+
+    @Builder.Default
+    private boolean isLocked = false; // If true, shifts/name are non-editable
 
     @Builder.Default
     private boolean isDefault = false;

@@ -5,6 +5,9 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import dxp.hourtracker.entity.User;
 
@@ -27,5 +30,5 @@ public interface ShiftRepository extends JpaRepository<Shift, Long> {
 
     @Modifying
     @Query("UPDATE Shift s SET s.workplaceId = :workplaceId WHERE s.userId = :userId AND s.workplaceId IS NULL")
-    void updateWorkplaceIdForUser(String userId, Long workplaceId);
+    void updateWorkplaceIdForUser(@Param("userId") String userId, @Param("workplaceId") Long workplaceId);
 }

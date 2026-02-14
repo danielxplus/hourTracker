@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Clock, X, Plus, Wallet, Pencil, Trash2, MoreVertical, AlertTriangle, CalendarDays } from "lucide-react";
+import { Clock, X, Plus, Wallet, Pencil, Trash2, MoreVertical, AlertTriangle, CalendarDays, Info } from "lucide-react";
 import ShiftForm from "../components/ShiftForm";
 import WeeklyShiftModal from "../components/WeeklyShiftModal";
 import { useAuth } from "../context/AuthContext";
@@ -42,6 +42,7 @@ export default function HomePage() {
     const [endShiftId, setEndShiftId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isWeeklyShiftOpen, setIsWeeklyShiftOpen] = useState(false);
+    const [isBreakdownOpen, setIsBreakdownOpen] = useState(false);
 
     useEffect(() => {
         const handleClickOutside = () => setActiveMenuId(null);
@@ -387,12 +388,27 @@ export default function HomePage() {
             <section className="mb-6" dir="rtl">
                 <div className="grid grid-cols-2 gap-3">
                     <div className="col-span-2 bg-skin-accent-primary rounded-2xl p-5 text-skin-text-primary border border-skin-border-secondary shadow-sm">
-                        <div className="text-xs text-skin-text-inverse-light mb-1">משכורת צפויה</div>
-                        <div className="text-3xl font-semibold text-skin-text-inverse mb-2">
+                        <div className="flex items-center justify-between">
+                            <div className="text-xs text-skin-text-inverse-light mb-1">משכורת צפויה</div>
+                            {summary?.netSalaryBreakdown && (
+                                <button
+                                    onClick={() => setIsBreakdownOpen(true)}
+                                    className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                                >
+                                    <Info className="w-3.5 h-3.5 text-white/70" />
+                                </button>
+                            )}
+                        </div>
+                        <div className="text-3xl font-semibold text-skin-text-inverse mb-1">
                             ₪{(summary?.expectedMonthSalary ?? 0).toFixed(0)}
                         </div>
+                        {summary?.netSalaryBreakdown?.netSalary != null && (
+                            <div className="text-sm text-white/80 font-medium">
+                                ~₪{Math.round(summary.netSalaryBreakdown.netSalary).toLocaleString()} נטו
+                            </div>
+                        )}
                         {summary?.totalTips > 0 && (
-                            <div className="text-xs text-skin-text-inverse-light">
+                            <div className="text-xs text-skin-text-inverse-light mt-1">
                                 לא כולל ₪{(summary.totalTips ?? 0).toFixed(0)} בטיפים
                             </div>
                         )}
@@ -731,6 +747,94 @@ export default function HomePage() {
                             >
                                 סיים משמרת
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Net Salary Breakdown Overlay */}
+            {isBreakdownOpen && summary?.netSalaryBreakdown && (
+                <div
+                    className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+                    onClick={() => setIsBreakdownOpen(false)}
+                >
+                    <div
+                        className="bg-skin-card-bg/95 backdrop-blur-xl rounded-t-3xl sm:rounded-3xl w-full max-w-sm shadow-2xl border border-skin-border-secondary/50"
+                        dir="rtl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="p-5 border-b border-skin-border-secondary">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-base font-bold text-skin-text-primary">פירוט משכורת</h3>
+                                <button
+                                    onClick={() => setIsBreakdownOpen(false)}
+                                    className="p-1.5 rounded-full bg-skin-bg-secondary text-skin-text-secondary hover:text-skin-text-primary transition-colors"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                            <p className="text-[10px] text-skin-text-tertiary mt-1">חישוב על פי חוקי המס 2026</p>
+                        </div>
+
+                        <div className="p-5 space-y-3">
+                            {/* Gross */}
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-skin-text-primary font-medium">ברוטו</span>
+                                <span className="text-sm font-bold text-skin-text-primary">₪{Math.round(summary.netSalaryBreakdown.grossSalary).toLocaleString()}</span>
+                            </div>
+
+                            <div className="border-t border-dashed border-skin-border-secondary my-2" />
+
+                            {/* Deductions */}
+                            {summary.netSalaryBreakdown.pensionDeduction > 0 && (
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs text-skin-text-secondary">פנסיה (6%)</span>
+                                    <span className="text-xs text-red-400 font-medium">-₪{Math.round(summary.netSalaryBreakdown.pensionDeduction).toLocaleString()}</span>
+                                </div>
+                            )}
+                            {summary.netSalaryBreakdown.studyFundDeduction > 0 && (
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs text-skin-text-secondary">קרן השתלמות (2.5%)</span>
+                                    <span className="text-xs text-red-400 font-medium">-₪{Math.round(summary.netSalaryBreakdown.studyFundDeduction).toLocaleString()}</span>
+                                </div>
+                            )}
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-skin-text-secondary">ביטוח לאומי + מס בריאות</span>
+                                <span className="text-xs text-red-400 font-medium">-₪{Math.round(summary.netSalaryBreakdown.bituachLeumiDeduction).toLocaleString()}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-skin-text-secondary">מס הכנסה</span>
+                                <span className="text-xs text-red-400 font-medium">-₪{Math.round(summary.netSalaryBreakdown.incomeTaxDeduction).toLocaleString()}</span>
+                            </div>
+
+                            {/* Credit Points */}
+                            {summary.netSalaryBreakdown.creditDiscount > 0 && (
+                                <>
+                                    <div className="border-t border-dashed border-skin-border-secondary my-2" />
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs text-skin-text-secondary">
+                                            נקודות זיכוי ({summary.netSalaryBreakdown.creditPoints})
+                                        </span>
+                                        <span className="text-xs text-emerald-400 font-medium">
+                                            הנחה של ₪{Math.round(summary.netSalaryBreakdown.creditDiscount).toLocaleString()}
+                                        </span>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Net Total */}
+                            <div className="border-t border-skin-border-secondary pt-3 mt-3">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-base font-bold text-skin-text-primary">נטו (לחשבון)</span>
+                                    <span className="text-xl font-bold text-emerald-500">₪{Math.round(summary.netSalaryBreakdown.netSalary).toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-4 bg-skin-bg-secondary/50 rounded-b-3xl">
+                            <p className="text-[9px] text-skin-text-tertiary text-center">
+                                * הסכום הוא הערכה בלבד ועשוי להשתנות. ניתן לעדכן את הניכויים בהגדרות.
+                            </p>
                         </div>
                     </div>
                 </div>
