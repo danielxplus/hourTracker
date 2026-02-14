@@ -173,39 +173,40 @@ export default function SettingsPage() {
         <h1 className="text-xl font-medium text-skin-text-primary mb-0.5">הגדרות</h1>
       </header>
 
-      {/* Display Name */}
-      <div className="bg-skin-card-bg rounded-2xl border border-skin-border-secondary p-4 hover:border-skin-accent-primary focus-ring-accent transition-all shadow-sm">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <div className="w-8 h-8 rounded-full bg-skin-accent-primary-bg flex items-center justify-center flex-shrink-0">
-              <User className="w-4 h-4 text-skin-accent-primary" />
-            </div>
-            <input
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                className="flex-1 bg-transparent text-sm text-skin-text-primary placeholder:text-skin-text-tertiary focus:outline-none"
-                placeholder="שם תצוגה"
-            />
-          </div>
-          <button
-              type="button"
-              onClick={handleSaveName}
-              disabled={isSaving || !displayName.trim()}
-              className="px-3.5 py-1.5 rounded-lg bg-skin-accent-primary text-white text-xs font-medium disabled:opacity-50 hover:opacity-90 transition-colors flex-shrink-0 shadow-sm"
-          >
-            {savedSection === "name" ? <Check className="w-3.5 h-3.5" /> : "שמור"}
-          </button>
-        </div>
-      </div>
-
       <div className="space-y-3 pb-8" dir="rtl">
+
+        {/* Display Name */}
+        <div className="bg-skin-card-bg rounded-2xl border border-skin-border-secondary p-4 hover:border-skin-accent-primary focus-ring-accent transition-all shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-skin-accent-primary-bg flex items-center justify-center flex-shrink-0">
+                <User className="w-4 h-4 text-skin-accent-primary" />
+              </div>
+              <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="flex-1 bg-transparent text-sm text-skin-text-primary placeholder:text-skin-text-tertiary focus:outline-none"
+                  placeholder="שם תצוגה"
+              />
+            </div>
+            <button
+                type="button"
+                onClick={handleSaveName}
+                disabled={isSaving || !displayName.trim()}
+                className="px-3.5 py-1.5 rounded-lg bg-skin-accent-primary text-white text-xs font-medium disabled:opacity-50 hover:opacity-90 transition-colors flex-shrink-0 shadow-sm"
+            >
+              {savedSection === "name" ? <Check className="w-3.5 h-3.5" /> : "שמור"}
+            </button>
+          </div>
+        </div>
+
         {/* Active Workplace Card */}
         <div className="bg-skin-card-bg rounded-2xl border border-skin-border-secondary overflow-hidden shadow-sm">
-          <div className="p-4 bg-skin-bg-secondary border-b border-skin-border-secondary">
+          <div className="p-4 bg-skin-accent-primary/5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Briefcase className="p-4 bg-skin-accent-primary/5" />
+                <Briefcase className="w-5 h-5 text-skin-accent-primary" />
                 <h3 className="text-sm font-medium text-skin-text-primary">מקום עבודה פעיל</h3>
               </div>
               <button
@@ -259,7 +260,7 @@ export default function SettingsPage() {
         <div className="bg-skin-card-bg rounded-2xl border border-skin-border-secondary divide-y divide-skin-border-secondary shadow-sm overflow-hidden">
           <div className="p-4 bg-skin-accent-primary/5">
             <div className="flex items-center gap-2">
-              <Banknote className="p-4 bg-skin-accent-primary/5" />
+              <Banknote className="w-5 h-5 text-skin-accent-primary" />
               <h3 className="text-xs font-semibold text-skin-text-primary uppercase tracking-wider">שכר ותעריפים</h3>
             </div>
             <p className="text-[10px] text-skin-text-tertiary mt-1">התעריפים משתנים עבור מקום העבודה הנבחר</p>
@@ -332,7 +333,7 @@ export default function SettingsPage() {
           <div className="p-4 bg-emerald-500/5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Shield className="p-4 bg-skin-accent-primary/5" />
+                <Shield className="w-5 h-5 text-skin-accent-primary" />
                 <h3 className="text-xs font-semibold text-skin-text-primary uppercase tracking-wider">ניכויים ומיסים</h3>
               </div>
               {deductionsSaved && (
