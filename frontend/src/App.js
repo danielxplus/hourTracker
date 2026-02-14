@@ -1,6 +1,8 @@
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { WorkplaceProvider } from "./context/WorkplaceContext";
+
 import HomePage from "./pages/HomePage";
 import SettingsPage from "./pages/SettingsPage";
 import HistoryPage from "./pages/HistoryPage";
@@ -14,8 +16,11 @@ function RootLayout() {
     return (
         <ThemeProvider>
             <AuthProvider>
-                <Outlet />
+                <WorkplaceProvider>
+                    <Outlet />
+                </WorkplaceProvider>
             </AuthProvider>
+
         </ThemeProvider>
     );
 }

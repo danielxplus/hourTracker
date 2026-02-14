@@ -24,8 +24,15 @@ public class ShiftController {
     private final ShiftRepository shiftRepository;
 
     @GetMapping("/shift-types")
-    public List<ShiftType> getShiftTypes() {
-        return shiftTypeRepository.findAllByOrderBySortOrderAsc();
+    public List<ShiftType> getShiftTypes(@RequestParam(required = false) Long workplaceId) {
+        if (workplaceId != null) {
+            return shiftTypeRepository.findAllByWorkplaceIdOrderBySortOrderAsc(workplaceId);
+        }
+        // Fallback for legacy/system defaults
+        // return shiftTypeRepository.findAllByWorkplaceIdIsNullOrderBySortOrderAsc();
+        // OR return all if strictly needed debugging, but we want separation.
+        // Let's return System Defaults (null workplaceId)
+        return shiftTypeRepository.findAllByWorkplaceIdIsNullOrderBySortOrderAsc();
     }
 
     @PostMapping("/shifts")

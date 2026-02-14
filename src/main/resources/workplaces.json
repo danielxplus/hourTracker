@@ -1,0 +1,248 @@
+[
+    {
+        "id": "mamilla-security",
+        "name": "Mamilla Security",
+        "nameHe": "ביטחון ממילא",
+        "hourlyRate": 51.0,
+        "overtimeHourlyRate": 63.75,
+        "shabatHourlyRate": 76.5,
+        "shabbatStartHour": 16,
+        "shabbatEndHour": 5,
+        "color": "#3B82F6",
+        "shifts": [
+            {
+                "code": "MORNING",
+                "nameHe": "משמרת בוקר",
+                "defaultStart": "06:30",
+                "defaultEnd": "15:30",
+                "defaultHours": 8.0,
+                "unpaidBreakMinutes": 60,
+                "sortOrder": 1
+            },
+            {
+                "code": "EVENING",
+                "nameHe": "משמרת ערב",
+                "defaultStart": "14:30",
+                "defaultEnd": "23:15",
+                "defaultHours": 8.25,
+                "unpaidBreakMinutes": 30,
+                "sortOrder": 2
+            },
+            {
+                "code": "NIGHT",
+                "nameHe": "משמרת לילה",
+                "defaultStart": "22:30",
+                "defaultEnd": "07:15",
+                "defaultHours": 8.45,
+                "unpaidBreakMinutes": 0,
+                "sortOrder": 3
+            },
+            {
+                "code": "MIDDLE",
+                "nameHe": "משמרת מידל",
+                "defaultStart": "12:00",
+                "defaultEnd": "21:00",
+                "defaultHours": 8.0,
+                "unpaidBreakMinutes": 60,
+                "sortOrder": 4
+            },
+            {
+                "code": "7AM_UNTIL_4",
+                "nameHe": "07:30 - 16:30",
+                "defaultStart": "07:30",
+                "defaultEnd": "16:30",
+                "defaultHours": 8.0,
+                "unpaidBreakMinutes": 60,
+                "sortOrder": 5
+            },
+            {
+                "code": "4PM_UNTIL_12",
+                "nameHe": "16:00 - 00:30",
+                "defaultStart": "16:00",
+                "defaultEnd": "00:30",
+                "defaultHours": 8.0,
+                "unpaidBreakMinutes": 30,
+                "sortOrder": 6
+            }
+        ]
+    },
+    {
+        "id": "generic-security",
+        "name": "Generic Security",
+        "nameHe": "אבטחה כללי",
+        "hourlyRate": 35.0,
+        "overtimeHourlyRate": 43.75,
+        "shabatHourlyRate": 52.5,
+        "color": "#6366F1",
+        "shifts": [
+            {
+                "code": "MORNING",
+                "nameHe": "משמרת בוקר",
+                "defaultStart": "06:00",
+                "defaultEnd": "14:00",
+                "defaultHours": 8.0,
+                "unpaidBreakMinutes": 0,
+                "sortOrder": 1
+            },
+            {
+                "code": "EVENING",
+                "nameHe": "משמרת ערב",
+                "defaultStart": "14:00",
+                "defaultEnd": "22:00",
+                "defaultHours": 8.0,
+                "unpaidBreakMinutes": 0,
+                "sortOrder": 2
+            },
+            {
+                "code": "NIGHT",
+                "nameHe": "משמרת לילה",
+                "defaultStart": "22:00",
+                "defaultEnd": "06:00",
+                "defaultHours": 8.0,
+                "unpaidBreakMinutes": 0,
+                "sortOrder": 3
+            }
+        ]
+    },
+    {
+        "id": "restaurant-cafe",
+        "name": "Restaurant / Café",
+        "nameHe": "מסעדה / קפה",
+        "hourlyRate": 33.0,
+        "overtimeHourlyRate": 41.25,
+        "shabatHourlyRate": 49.5,
+        "color": "#F59E0B",
+        "shifts": [
+            {
+                "code": "MORNING",
+                "nameHe": "משמרת בוקר",
+                "defaultStart": "07:00",
+                "defaultEnd": "15:00",
+                "defaultHours": 7.5,
+                "unpaidBreakMinutes": 30,
+                "sortOrder": 1
+            },
+            {
+                "code": "EVENING",
+                "nameHe": "משמרת ערב",
+                "defaultStart": "15:00",
+                "defaultEnd": "23:00",
+                "defaultHours": 7.5,
+                "unpaidBreakMinutes": 30,
+                "sortOrder": 2
+            },
+            {
+                "code": "DOUBLE",
+                "nameHe": "משמרת כפולה",
+                "defaultStart": "10:00",
+                "defaultEnd": "23:00",
+                "defaultHours": 12.0,
+                "unpaidBreakMinutes": 60,
+                "sortOrder": 3
+            },
+            {
+                "code": "FRIDAY",
+                "nameHe": "משמרת שישי",
+                "defaultStart": "07:00",
+                "defaultEnd": "15:00",
+                "defaultHours": 7.0,
+                "unpaidBreakMinutes": 60,
+                "sortOrder": 4
+            }
+        ]
+    },
+    {
+        "id": "retail",
+        "name": "Retail / Supermarket",
+        "nameHe": "קמעונאות / סופר",
+        "hourlyRate": 33.0,
+        "overtimeHourlyRate": 41.25,
+        "shabatHourlyRate": 49.5,
+        "color": "#10B981",
+        "shifts": [
+            {
+                "code": "MORNING",
+                "nameHe": "משמרת בוקר",
+                "defaultStart": "07:00",
+                "defaultEnd": "15:00",
+                "defaultHours": 7.5,
+                "unpaidBreakMinutes": 30,
+                "sortOrder": 1
+            },
+            {
+                "code": "EVENING",
+                "nameHe": "משמרת ערב",
+                "defaultStart": "15:00",
+                "defaultEnd": "22:00",
+                "defaultHours": 6.5,
+                "unpaidBreakMinutes": 30,
+                "sortOrder": 2
+            },
+            {
+                "code": "FULL_DAY",
+                "nameHe": "משמרת מלאה",
+                "defaultStart": "08:00",
+                "defaultEnd": "17:00",
+                "defaultHours": 8.0,
+                "unpaidBreakMinutes": 60,
+                "sortOrder": 3
+            },
+            {
+                "code": "FRIDAY",
+                "nameHe": "משמרת שישי",
+                "defaultStart": "07:00",
+                "defaultEnd": "14:00",
+                "defaultHours": 6.0,
+                "unpaidBreakMinutes": 60,
+                "sortOrder": 4
+            }
+        ]
+    },
+    {
+        "id": "hotel",
+        "name": "Hotel",
+        "nameHe": "מלונאות",
+        "hourlyRate": 35.0,
+        "overtimeHourlyRate": 43.75,
+        "shabatHourlyRate": 52.5,
+        "color": "#EC4899",
+        "shifts": [
+            {
+                "code": "MORNING",
+                "nameHe": "משמרת בוקר",
+                "defaultStart": "07:00",
+                "defaultEnd": "15:00",
+                "defaultHours": 7.5,
+                "unpaidBreakMinutes": 30,
+                "sortOrder": 1
+            },
+            {
+                "code": "EVENING",
+                "nameHe": "משמרת ערב",
+                "defaultStart": "15:00",
+                "defaultEnd": "23:00",
+                "defaultHours": 7.5,
+                "unpaidBreakMinutes": 30,
+                "sortOrder": 2
+            },
+            {
+                "code": "NIGHT",
+                "nameHe": "משמרת לילה",
+                "defaultStart": "23:00",
+                "defaultEnd": "07:00",
+                "defaultHours": 8.0,
+                "unpaidBreakMinutes": 0,
+                "sortOrder": 3
+            },
+            {
+                "code": "RECEPTION",
+                "nameHe": "משמרת קבלה",
+                "defaultStart": "08:00",
+                "defaultEnd": "16:00",
+                "defaultHours": 7.5,
+                "unpaidBreakMinutes": 30,
+                "sortOrder": 4
+            }
+        ]
+    }
+]
