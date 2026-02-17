@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { User, Banknote, LogOut, Check, X, Palette, Lock, Briefcase, Plus, Trash2, Edit2, Shield } from "lucide-react";
+import { User, Banknote, LogOut, Check, X, Palette, Lock, Briefcase, Plus, Trash2, Edit2, Shield, ChevronDown, ChevronUp } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { useWorkplace } from "../context/WorkplaceContext";
@@ -39,6 +39,11 @@ export default function SettingsPage() {
 
   // Workplace Modal State
   const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // Section Expansion State
+  const [isSalaryExpanded, setIsSalaryExpanded] = useState(true);
+  const [isTaxesExpanded, setIsTaxesExpanded] = useState(true);
 
   useEffect(() => {
     async function load() {
@@ -151,10 +156,11 @@ export default function SettingsPage() {
     }
   };
 
-  const handleDeleteWorkplace = async (id) => {
-    if (!window.confirm("האם למחוק את מקום העבודה?")) return;
+  const handleDeleteWorkplace = async () => {
+    if (!activeWorkplaceId) return;
     try {
-      await api.delete(`/workplaces/${id}`);
+      await api.delete(`/workplaces/${activeWorkplaceId}`);
+      setShowDeleteModal(false);
       refreshWorkplaces();
     } catch (error) {
       console.error(error);
@@ -239,15 +245,26 @@ export default function SettingsPage() {
                     )}
                   </div>
                 </div>
-                <select
-                  value={activeWorkplaceId || ""}
-                  onChange={(e) => setActiveWorkplaceId(Number(e.target.value))}
-                  className="bg-skin-bg-secondary border border-skin-border-secondary rounded-lg px-3 py-1.5 text-xs text-skin-text-primary focus:outline-none transition-all appearance-none"
-                >
-                  {workplaces.map(w => (
-                    <option key={w.id} value={w.id}>{w.name}</option>
-                  ))}
-                </select>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={activeWorkplaceId || ""}
+                    onChange={(e) => setActiveWorkplaceId(Number(e.target.value))}
+                    className="bg-skin-bg-secondary border border-skin-border-secondary rounded-lg px-3 py-1.5 text-xs text-skin-text-primary focus:outline-none transition-all appearance-none"
+                  >
+                    {workplaces.map(w => (
+                      <option key={w.id} value={w.id}>{w.name}</option>
+                    ))}
+                  </select>
+                  {workplaces.length > 1 && (
+                    <button
+                      onClick={() => setShowDeleteModal(true)}
+                      className="p-1.5 rounded-lg text-skin-text-tertiary hover:text-red-500 hover:bg-red-50 transition-colors"
+                      title="מחק מקום עבודה"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="text-center py-4">
@@ -265,189 +282,211 @@ export default function SettingsPage() {
 
         {/* Rates Section */}
         <div className="bg-skin-card-bg rounded-2xl border border-skin-border-secondary divide-y divide-skin-border-secondary shadow-sm overflow-hidden">
-          <div className="p-4 bg-skin-accent-primary/5">
+          <button
+            type="button"
+            onClick={() => setIsSalaryExpanded(!isSalaryExpanded)}
+            className="w-full text-right p-4 bg-skin-accent-primary/5 flex items-center justify-between hover:bg-skin-accent-primary/10 transition-colors"
+          >
             <div className="flex items-center gap-2">
               <Banknote className="w-5 h-5 text-skin-accent-primary" />
-              <h3 className="text-xs font-semibold text-skin-text-primary uppercase tracking-wider">שכר ותעריפים</h3>
-            </div>
-            <p className="text-[10px] text-skin-text-tertiary mt-1">התעריפים משתנים עבור מקום העבודה הנבחר</p>
-          </div>
-
-          <div className="p-4 hover:bg-skin-bg-secondary transition-colors">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 text-sm text-skin-text-secondary">
-                <span>₪ שכר שעתי</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  value={hourlyRate}
-                  onChange={handleRateChange}
-                  className="w-24 text-sm text-left bg-skin-bg-secondary rounded-lg px-3 py-2 border border-skin-border-secondary transition-all text-skin-text-primary focus-ring-accent"
-                />
+              <div>
+                <h3 className="text-xs font-semibold text-skin-text-primary uppercase tracking-wider">שכר ותעריפים</h3>
+                <p className="text-[10px] text-skin-text-tertiary mt-1">התעריפים משתנים עבור מקום העבודה הנבחר</p>
               </div>
             </div>
-          </div>
+            {isSalaryExpanded ? <ChevronUp className="w-4 h-4 text-skin-text-tertiary" /> : <ChevronDown className="w-4 h-4 text-skin-text-tertiary" />}
+          </button>
 
-          <div className="p-4 hover:bg-skin-bg-secondary transition-colors">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 text-sm text-skin-text-secondary">
-                <span>₪ שעות נוספות (125%)</span>
+          {isSalaryExpanded && (
+            <>
+              <div className="p-4 hover:bg-skin-bg-secondary transition-colors">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 text-sm text-skin-text-secondary">
+                    <span>₪ שכר שעתי</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={hourlyRate}
+                      onChange={handleRateChange}
+                      className="w-24 text-sm text-left bg-skin-bg-secondary rounded-lg px-3 py-2 border border-skin-border-secondary transition-all text-skin-text-primary focus-ring-accent"
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  step="0.1"
-                  value={overtimeHourlyRate}
-                  onChange={(e) => setOvertimeHourlyRate(e.target.value)}
-                  className="w-24 text-sm text-left bg-skin-bg-secondary rounded-lg px-3 py-2 border border-skin-border-secondary transition-all text-skin-text-primary focus-ring-accent"
-                />
-              </div>
-            </div>
-          </div>
 
-          <div className="p-4 hover:bg-skin-bg-secondary transition-colors">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 text-sm text-skin-text-secondary">
-                <span>₪ שכר שבת (150%)</span>
+              <div className="p-4 hover:bg-skin-bg-secondary transition-colors">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 text-sm text-skin-text-secondary">
+                    <span>₪ שעות נוספות (125%)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={overtimeHourlyRate}
+                      onChange={(e) => setOvertimeHourlyRate(e.target.value)}
+                      className="w-24 text-sm text-left bg-skin-bg-secondary rounded-lg px-3 py-2 border border-skin-border-secondary transition-all text-skin-text-primary focus-ring-accent"
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  step="0.1"
-                  value={shabatHourlyRate}
-                  onChange={(e) => setShabatHourlyRate(e.target.value)}
-                  className="w-24 text-sm text-left bg-skin-bg-secondary rounded-lg px-3 py-2 border border-skin-border-secondary transition-all text-skin-text-primary focus-ring-accent"
-                />
-              </div>
-            </div>
-          </div>
 
-          <div className="p-4 bg-skin-bg-secondary/50">
-            <button
-              type="button"
-              onClick={handleSaveSalary}
-              disabled={isSaving || Number(hourlyRate) <= 0}
-              className="w-full rounded-xl bg-skin-accent-primary text-white py-3 text-sm font-medium shadow-sm disabled:opacity-50 hover:opacity-90 transition-all active:scale-95"
-            >
-              {savedSection === "salary" ? "נשמר ✓" : "שמור תעריפים למקום זה"}
-            </button>
-          </div>
+              <div className="p-4 hover:bg-skin-bg-secondary transition-colors">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 text-sm text-skin-text-secondary">
+                    <span>₪ שכר שבת (150%)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={shabatHourlyRate}
+                      onChange={(e) => setShabatHourlyRate(e.target.value)}
+                      className="w-24 text-sm text-left bg-skin-bg-secondary rounded-lg px-3 py-2 border border-skin-border-secondary transition-all text-skin-text-primary focus-ring-accent"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-skin-bg-secondary/50">
+                <button
+                  type="button"
+                  onClick={handleSaveSalary}
+                  disabled={isSaving || Number(hourlyRate) <= 0}
+                  className="w-full rounded-xl bg-skin-accent-primary text-white py-3 text-sm font-medium shadow-sm disabled:opacity-50 hover:opacity-90 transition-all active:scale-95"
+                >
+                  {savedSection === "salary" ? "נשמר ✓" : "שמור תעריפים למקום זה"}
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Net Salary Predictor: Deductions & Taxes */}
         <div className="bg-skin-card-bg rounded-2xl border border-skin-border-secondary divide-y divide-skin-border-secondary shadow-sm overflow-hidden">
-          <div className="p-4 bg-skin-accent-primary/5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-skin-accent-primary" />
-                <h3 className="text-xs font-semibold text-skin-text-primary uppercase tracking-wider">ניכויים ומיסים</h3>
+          <button
+            type="button"
+            onClick={() => setIsTaxesExpanded(!isTaxesExpanded)}
+            className="w-full text-right p-4 bg-skin-accent-primary/5 flex items-center justify-between hover:bg-skin-accent-primary/10 transition-colors"
+          >
+            <div className="flex items-center gap-2 flex-1">
+              <Shield className="w-5 h-5 text-skin-accent-primary" />
+              <div className="flex-1 text-right">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold text-skin-text-primary uppercase tracking-wider">ניכויים ומיסים</h3>
+                  {deductionsSaved && (
+                    <span className="text-[10px] text-emerald-500 font-medium flex items-center gap-1 animate-pulse ml-2">
+                      <Check className="w-3 h-3" /> נשמר
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] text-skin-text-tertiary mt-1">חישוב נטו חכם לפי חוקי המס 2026</p>
               </div>
-              {deductionsSaved && (
-                <span className="text-[10px] text-emerald-500 font-medium flex items-center gap-1 animate-pulse">
-                  <Check className="w-3 h-3" /> נשמר
-                </span>
+            </div>
+            {isTaxesExpanded ? <ChevronUp className="w-4 h-4 text-skin-text-tertiary mr-2" /> : <ChevronDown className="w-4 h-4 text-skin-text-tertiary mr-2" />}
+          </button>
+
+          {isTaxesExpanded && (
+            <>
+              {/* Tax Toggle */}
+              <div className="p-4 hover:bg-skin-bg-secondary transition-colors">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-skin-text-primary">משלם/ת מס הכנסה</div>
+                    <div className="text-[10px] text-skin-text-tertiary mt-0.5">משוחררי צבא בשנה הראשונה עשויים להיות פטורים</div>
+                  </div>
+                  <button
+                    onClick={() => { const v = !paysTax; setPaysTax(v); handleSaveDeduction({ paysTax: v }); }}
+                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${paysTax ? 'bg-emerald-500' : 'bg-skin-border-secondary'}`}
+                  >
+                    <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${paysTax ? 'right-0.5' : 'right-[22px]'}`} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Pension Toggle */}
+              <div className="p-4 hover:bg-skin-bg-secondary transition-colors">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-skin-text-primary">פנסיה (6%)</div>
+                    <div className="text-[10px] text-skin-text-tertiary mt-0.5">חלק עובד - ניכוי מהברוטו</div>
+                  </div>
+                  <button
+                    onClick={() => { const v = !pensionEnabled; setPensionEnabled(v); handleSaveDeduction({ pensionEnabled: v }); }}
+                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${pensionEnabled ? 'bg-emerald-500' : 'bg-skin-border-secondary'}`}
+                  >
+                    <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${pensionEnabled ? 'right-0.5' : 'right-[22px]'}`} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Study Fund Toggle */}
+              <div className="p-4 hover:bg-skin-bg-secondary transition-colors">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-skin-text-primary">קרן השתלמות (2.5%)</div>
+                    <div className="text-[10px] text-skin-text-tertiary mt-0.5">חלק עובד - הטבה פטורה ממס</div>
+                  </div>
+                  <button
+                    onClick={() => { const v = !studyFundEnabled; setStudyFundEnabled(v); handleSaveDeduction({ studyFundEnabled: v }); }}
+                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${studyFundEnabled ? 'bg-emerald-500' : 'bg-skin-border-secondary'}`}
+                  >
+                    <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${studyFundEnabled ? 'right-0.5' : 'right-[22px]'}`} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Gender Toggle */}
+              <div className="p-4 hover:bg-skin-bg-secondary transition-colors">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-skin-text-primary">מגדר: {isFemale ? 'נקבה' : 'זכר'}</div>
+                    <div className="text-[10px] text-skin-text-tertiary mt-0.5">{isFemale ? '2.75 נקודות זיכוי' : '2.25 נקודות זיכוי'}</div>
+                  </div>
+                  <button
+                    onClick={() => { const v = !isFemale; setIsFemale(v); handleSaveDeduction({ isFemale: v }); }}
+                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${isFemale ? 'bg-pink-400' : 'bg-blue-400'}`}
+                  >
+                    <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${isFemale ? 'right-0.5' : 'right-[22px]'}`} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Ex-Soldier Toggle */}
+              <div className="p-4 hover:bg-skin-bg-secondary transition-colors">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-skin-text-primary">משוחרר/ת שירות</div>
+                    <div className="text-[10px] text-skin-text-tertiary mt-0.5">+2 נקודות זיכוי ל-36 חודשים</div>
+                  </div>
+                  <button
+                    onClick={() => { const v = !isExSoldier; setIsExSoldier(v); handleSaveDeduction({ isExSoldier: v }); }}
+                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${isExSoldier ? 'bg-emerald-500' : 'bg-skin-border-secondary'}`}
+                  >
+                    <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${isExSoldier ? 'right-0.5' : 'right-[22px]'}`} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Discharge Date (conditional) */}
+              {isExSoldier && (
+                <div className="p-4 hover:bg-skin-bg-secondary transition-colors">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-sm text-skin-text-secondary">תאריך שחרור</div>
+                    <input
+                      type="date"
+                      value={dischargeDate}
+                      onChange={(e) => {
+                        setDischargeDate(e.target.value);
+                        handleSaveDeduction({ dischargeDate: e.target.value || null });
+                      }}
+                      className="bg-skin-bg-secondary border border-skin-border-secondary rounded-lg px-3 py-2 text-xs text-skin-text-primary focus:outline-none"
+                    />
+                  </div>
+                </div>
               )}
-            </div>
-            <p className="text-[10px] text-skin-text-tertiary mt-1">חישוב נטו חכם לפי חוקי המס 2026</p>
-          </div>
-
-          {/* Tax Toggle */}
-          <div className="p-4 hover:bg-skin-bg-secondary transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-skin-text-primary">משלם/ת מס הכנסה</div>
-                <div className="text-[10px] text-skin-text-tertiary mt-0.5">משוחררי צבא בשנה הראשונה עשויים להיות פטורים</div>
-              </div>
-              <button
-                onClick={() => { const v = !paysTax; setPaysTax(v); handleSaveDeduction({ paysTax: v }); }}
-                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${paysTax ? 'bg-emerald-500' : 'bg-skin-border-secondary'}`}
-              >
-                <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${paysTax ? 'right-0.5' : 'right-[22px]'}`} />
-              </button>
-            </div>
-          </div>
-
-          {/* Pension Toggle */}
-          <div className="p-4 hover:bg-skin-bg-secondary transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-skin-text-primary">פנסיה (6%)</div>
-                <div className="text-[10px] text-skin-text-tertiary mt-0.5">חלק עובד - ניכוי מהברוטו</div>
-              </div>
-              <button
-                onClick={() => { const v = !pensionEnabled; setPensionEnabled(v); handleSaveDeduction({ pensionEnabled: v }); }}
-                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${pensionEnabled ? 'bg-emerald-500' : 'bg-skin-border-secondary'}`}
-              >
-                <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${pensionEnabled ? 'right-0.5' : 'right-[22px]'}`} />
-              </button>
-            </div>
-          </div>
-
-          {/* Study Fund Toggle */}
-          <div className="p-4 hover:bg-skin-bg-secondary transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-skin-text-primary">קרן השתלמות (2.5%)</div>
-                <div className="text-[10px] text-skin-text-tertiary mt-0.5">חלק עובד - הטבה פטורה ממס</div>
-              </div>
-              <button
-                onClick={() => { const v = !studyFundEnabled; setStudyFundEnabled(v); handleSaveDeduction({ studyFundEnabled: v }); }}
-                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${studyFundEnabled ? 'bg-emerald-500' : 'bg-skin-border-secondary'}`}
-              >
-                <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${studyFundEnabled ? 'right-0.5' : 'right-[22px]'}`} />
-              </button>
-            </div>
-          </div>
-
-          {/* Gender Toggle */}
-          <div className="p-4 hover:bg-skin-bg-secondary transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-skin-text-primary">מגדר: {isFemale ? 'נקבה' : 'זכר'}</div>
-                <div className="text-[10px] text-skin-text-tertiary mt-0.5">{isFemale ? '2.75 נקודות זיכוי' : '2.25 נקודות זיכוי'}</div>
-              </div>
-              <button
-                onClick={() => { const v = !isFemale; setIsFemale(v); handleSaveDeduction({ isFemale: v }); }}
-                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${isFemale ? 'bg-pink-400' : 'bg-blue-400'}`}
-              >
-                <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${isFemale ? 'right-0.5' : 'right-[22px]'}`} />
-              </button>
-            </div>
-          </div>
-
-          {/* Ex-Soldier Toggle */}
-          <div className="p-4 hover:bg-skin-bg-secondary transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-skin-text-primary">משוחרר/ת שירות</div>
-                <div className="text-[10px] text-skin-text-tertiary mt-0.5">+2 נקודות זיכוי ל-36 חודשים</div>
-              </div>
-              <button
-                onClick={() => { const v = !isExSoldier; setIsExSoldier(v); handleSaveDeduction({ isExSoldier: v }); }}
-                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${isExSoldier ? 'bg-emerald-500' : 'bg-skin-border-secondary'}`}
-              >
-                <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${isExSoldier ? 'right-0.5' : 'right-[22px]'}`} />
-              </button>
-            </div>
-          </div>
-
-          {/* Discharge Date (conditional) */}
-          {isExSoldier && (
-            <div className="p-4 hover:bg-skin-bg-secondary transition-colors">
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-sm text-skin-text-secondary">תאריך שחרור</div>
-                <input
-                  type="date"
-                  value={dischargeDate}
-                  onChange={(e) => {
-                    setDischargeDate(e.target.value);
-                    handleSaveDeduction({ dischargeDate: e.target.value || null });
-                  }}
-                  className="bg-skin-bg-secondary border border-skin-border-secondary rounded-lg px-3 py-2 text-xs text-skin-text-primary focus:outline-none"
-                />
-              </div>
-            </div>
+            </>
           )}
         </div>
 
@@ -498,32 +537,6 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Workplace List (Simplified) */}
-        {workplaces.length > 1 && (
-          <div className="bg-skin-card-bg rounded-2xl border border-skin-border-secondary p-4 shadow-sm">
-            <h3 className="text-xs font-semibold text-skin-text-secondary uppercase tracking-wider mb-3">מקומות העבודה שלי</h3>
-            <div className="space-y-2">
-              {workplaces.map(w => (
-                <div key={w.id} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${w.id === activeWorkplaceId ? 'bg-skin-accent-primary-bg border-skin-accent-primary/30' : 'bg-skin-bg-secondary border-skin-border-secondary'}`}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: w.color }}></div>
-                    <span className={`text-sm font-medium ${w.id === activeWorkplaceId ? 'text-skin-accent-primary' : 'text-skin-text-primary'}`}>{w.name}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    {w.id !== activeWorkplaceId && (
-                      <button
-                        onClick={() => handleDeleteWorkplace(w.id)}
-                        className="p-1.5 rounded-lg text-skin-text-tertiary hover:text-red-500 hover:bg-skin-card-bg transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         <div className="pt-2">
           <button
@@ -630,6 +643,34 @@ export default function SettingsPage() {
                 className="w-full py-3 rounded-xl bg-skin-card-bg border border-skin-border-secondary text-sm font-medium text-skin-text-primary"
               >
                 סגור
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Delete Workplace Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-skin-modal-overlay backdrop-blur-sm flex items-center justify-center z-[70] p-4" onClick={() => setShowDeleteModal(false)}>
+          <div className="bg-skin-card-bg rounded-2xl w-full max-w-xs p-5 shadow-2xl" dir="rtl" onClick={(e) => e.stopPropagation()}>
+            <div className="text-center mb-5">
+              <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-3">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-skin-text-primary mb-1">מחיקת מקום עבודה</h3>
+              <p className="text-sm text-skin-text-secondary">האם את/ה בטוח/ה לגבי מחיקת "{activeWorkplace?.name}"? פעולה זו תמחוק את כל נתוני המקום.</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 py-3 rounded-xl font-medium text-skin-text-secondary hover:bg-skin-bg-secondary transition-colors"
+              >
+                ביטול
+              </button>
+              <button
+                onClick={handleDeleteWorkplace}
+                className="flex-1 bg-red-600 text-white py-3 rounded-xl font-medium hover:bg-red-700 active:scale-95 transition-all"
+              >
+                מחק
               </button>
             </div>
           </div>
