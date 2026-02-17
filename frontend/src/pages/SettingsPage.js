@@ -140,8 +140,9 @@ export default function SettingsPage() {
       await selectTemplate(templateId);
       setIsSelectionModalOpen(false);
     } catch (error) {
-      console.error(error);
-      const msg = error.response?.data?.error || "שגיאה בבחירת מקום עבודה";
+      console.error("Workplace selection error:", error);
+      const serverError = error.response?.data?.error;
+      const msg = serverError ? `שגיאה: ${serverError}` : "שגיאה בבחירת מקום עבודה. אנא נסה שוב או בדוק את לוג השרת.";
       alert(msg);
     }
   };
@@ -332,7 +333,7 @@ export default function SettingsPage() {
 
         {/* Net Salary Predictor: Deductions & Taxes */}
         <div className="bg-skin-card-bg rounded-2xl border border-skin-border-secondary divide-y divide-skin-border-secondary shadow-sm overflow-hidden">
-          <div className="p-4 bg-emerald-500/5">
+          <div className="p-4 bg-skin-accent-primary/5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Shield className="w-5 h-5 text-skin-accent-primary" />

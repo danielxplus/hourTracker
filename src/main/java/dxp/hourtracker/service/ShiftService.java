@@ -58,10 +58,10 @@ public class ShiftService {
         ShiftType type;
         if (workplaceId != null) {
             type = shiftTypeRepository.findByCodeAndWorkplaceId(shiftCode, workplaceId)
-                    .orElseGet(() -> shiftTypeRepository.findByCode(shiftCode)
+                    .orElseGet(() -> shiftTypeRepository.findFirstByCodeAndWorkplaceIdIsNull(shiftCode)
                             .orElseThrow(() -> new IllegalArgumentException("Unknown shift type: " + shiftCode)));
         } else {
-            type = shiftTypeRepository.findByCode(shiftCode)
+            type = shiftTypeRepository.findFirstByCodeAndWorkplaceIdIsNull(shiftCode)
                     .orElseThrow(() -> new IllegalArgumentException("Unknown shift type: " + shiftCode));
         }
 
@@ -90,20 +90,21 @@ public class ShiftService {
         if (code != null) {
             if (workplaceId != null) {
                 type = shiftTypeRepository.findByCodeAndWorkplaceId(code, workplaceId)
-                        .orElseGet(() -> shiftTypeRepository.findByCode(code)
+                        .orElseGet(() -> shiftTypeRepository.findFirstByCodeAndWorkplaceIdIsNull(code)
                                 .orElseThrow(() -> new IllegalArgumentException("Unknown shift type: " + code)));
             } else {
-                type = shiftTypeRepository.findByCode(code)
+                type = shiftTypeRepository.findFirstByCodeAndWorkplaceIdIsNull(code)
                         .orElseThrow(() -> new IllegalArgumentException("Unknown shift type: " + code));
             }
         } else {
             // Fallback: try to find by existing Hebrew name
             if (workplaceId != null) {
                 type = shiftTypeRepository.findByNameHeAndWorkplaceId(existing.getShiftType(), workplaceId)
-                        .orElseGet(() -> shiftTypeRepository.findByNameHe(existing.getShiftType())
+                        .orElseGet(() -> shiftTypeRepository
+                                .findFirstByNameHeAndWorkplaceIdIsNull(existing.getShiftType())
                                 .orElseThrow(() -> new IllegalArgumentException("Shift Type configuration not found")));
             } else {
-                type = shiftTypeRepository.findByNameHe(existing.getShiftType())
+                type = shiftTypeRepository.findFirstByNameHeAndWorkplaceIdIsNull(existing.getShiftType())
                         .orElseThrow(() -> new IllegalArgumentException("Shift Type configuration not found"));
             }
         }
@@ -137,10 +138,10 @@ public class ShiftService {
         ShiftType type;
         if (existing.getWorkplaceId() != null) {
             type = shiftTypeRepository.findByNameHeAndWorkplaceId(existing.getShiftType(), existing.getWorkplaceId())
-                    .orElseGet(() -> shiftTypeRepository.findByNameHe(existing.getShiftType())
+                    .orElseGet(() -> shiftTypeRepository.findFirstByNameHeAndWorkplaceIdIsNull(existing.getShiftType())
                             .orElseThrow(() -> new IllegalArgumentException("Shift Type not found")));
         } else {
-            type = shiftTypeRepository.findByNameHe(existing.getShiftType())
+            type = shiftTypeRepository.findFirstByNameHeAndWorkplaceIdIsNull(existing.getShiftType())
                     .orElseThrow(() -> new IllegalArgumentException("Shift Type not found"));
         }
 

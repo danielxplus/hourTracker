@@ -81,11 +81,14 @@ public class WorkplaceTemplateService {
                 workplace.setDefault(true);
             }
 
+            log.info("Creating workplace for user {} using template {}", userId, templateId);
             workplace = workplaceRepository.save(workplace);
+            log.info("Created workplace ID: {} for user {}", workplace.getId(), userId);
 
             // Clone shift types
             for (ShiftTypeTemplate stt : template.getShifts()) {
                 try {
+                    log.debug("Creating shift type {} for workplace {}", stt.getCode(), workplace.getId());
                     ShiftType shiftType = ShiftType.builder()
                             .code(stt.getCode())
                             .workplaceId(workplace.getId())
@@ -98,13 +101,16 @@ public class WorkplaceTemplateService {
                             .build();
                     shiftTypeRepository.save(shiftType);
                 } catch (Exception e) {
-                    log.error("Failed to save shift type: " + stt.getCode(), e);
-                    throw new RuntimeException("Failed to save shift type: " + stt.getCode(), e);
+                    log.error("Failed to save shift type {} for workplace {}: {}", stt.getCode(), workplace.getId(),
+                            e.getMessage());
+                    throw new RuntimeException("Failed to save shift type " + stt.getCode() + ": " + e.getMessage(), e);
                 }
             }
 
             // Migrate legacy shifts (where workplaceId is NULL) to this new workplace
             if (workplace.isDefault()) {
+                log.info("Migrating legacy shifts (workplaceId IS NULL) to new default workplace {}",
+                        workplace.getId());
                 shiftRepository.updateWorkplaceIdForUser(userId, workplace.getId());
             }
 

@@ -404,7 +404,7 @@ export default function HomePage() {
                             ₪{(summary?.expectedMonthSalary ?? 0).toFixed(0)}
                         </div>
                         {summary?.netSalaryBreakdown?.netSalary != null && (
-                            <div className="text-sm text-white/80 font-medium">
+                            <div className="text-sm text-skin-text-inverse-light mt-1">
                                 ~₪{Math.round(summary.netSalaryBreakdown.netSalary).toLocaleString()} נטו
                             </div>
                         )}
@@ -610,7 +610,7 @@ export default function HomePage() {
 
                         {/* Date */}
                         <div className="mb-4">
-                            <DatePicker
+                            <input
                                 selected={selectedDate ? new Date(selectedDate) : null}
                                 onChange={(date) => {
                                     if (date) {
@@ -766,7 +766,7 @@ export default function HomePage() {
                     >
                         <div className="p-5 border-b border-skin-border-secondary">
                             <div className="flex items-center justify-between">
-                                <h3 className="text-base font-bold text-skin-text-primary">פירוט משכורת</h3>
+                                <h3 className="text-base font-bold text-white">פירוט משכורת</h3>
                                 <button
                                     onClick={() => setIsBreakdownOpen(false)}
                                     className="p-1.5 rounded-full bg-skin-bg-secondary text-skin-text-secondary hover:text-skin-text-primary transition-colors"
@@ -774,13 +774,13 @@ export default function HomePage() {
                                     <X className="w-4 h-4" />
                                 </button>
                             </div>
-                            <p className="text-[10px] text-skin-text-tertiary mt-1">חישוב על פי חוקי המס 2026</p>
+                            <p className="text-[10px] text-white/80 mt-1">חישוב על פי חוקי המס 2026</p>
                         </div>
 
                         <div className="p-5 space-y-3">
                             {/* Gross */}
                             <div className="flex items-center justify-between">
-                                <span className="text-sm text-skin-text-primary font-medium">ברוטו</span>
+                                <span className="text-sm text-white/70 font-medium">ברוטו</span>
                                 <span className="text-sm font-bold text-skin-text-primary">₪{Math.round(summary.netSalaryBreakdown.grossSalary).toLocaleString()}</span>
                             </div>
 
@@ -789,22 +789,22 @@ export default function HomePage() {
                             {/* Deductions */}
                             {summary.netSalaryBreakdown.pensionDeduction > 0 && (
                                 <div className="flex items-center justify-between">
-                                    <span className="text-xs text-skin-text-secondary">פנסיה (6%)</span>
+                                    <span className="text-xs text-white/70">פנסיה (6%)</span>
                                     <span className="text-xs text-red-400 font-medium">-₪{Math.round(summary.netSalaryBreakdown.pensionDeduction).toLocaleString()}</span>
                                 </div>
                             )}
                             {summary.netSalaryBreakdown.studyFundDeduction > 0 && (
                                 <div className="flex items-center justify-between">
-                                    <span className="text-xs text-skin-text-secondary">קרן השתלמות (2.5%)</span>
+                                    <span className="text-xs text-white/70">קרן השתלמות (2.5%)</span>
                                     <span className="text-xs text-red-400 font-medium">-₪{Math.round(summary.netSalaryBreakdown.studyFundDeduction).toLocaleString()}</span>
                                 </div>
                             )}
                             <div className="flex items-center justify-between">
-                                <span className="text-xs text-skin-text-secondary">ביטוח לאומי + מס בריאות</span>
+                                <span className="text-xs text-white/70">ביטוח לאומי + מס בריאות</span>
                                 <span className="text-xs text-red-400 font-medium">-₪{Math.round(summary.netSalaryBreakdown.bituachLeumiDeduction).toLocaleString()}</span>
                             </div>
                             <div className="flex items-center justify-between">
-                                <span className="text-xs text-skin-text-secondary">מס הכנסה</span>
+                                <span className="text-xs text-white/70">מס הכנסה</span>
                                 <span className="text-xs text-red-400 font-medium">-₪{Math.round(summary.netSalaryBreakdown.incomeTaxDeduction).toLocaleString()}</span>
                             </div>
 
@@ -813,7 +813,7 @@ export default function HomePage() {
                                 <>
                                     <div className="border-t border-dashed border-skin-border-secondary my-2" />
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs text-skin-text-secondary">
+                                        <span className="text-xs text-white/70">
                                             נקודות זיכוי ({summary.netSalaryBreakdown.creditPoints})
                                         </span>
                                         <span className="text-xs text-emerald-400 font-medium">
@@ -826,14 +826,14 @@ export default function HomePage() {
                             {/* Net Total */}
                             <div className="border-t border-skin-border-secondary pt-3 mt-3">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-base font-bold text-skin-text-primary">נטו (לחשבון)</span>
+                                    <span className="text-base font-bold text-white">נטו (לחשבון)</span>
                                     <span className="text-xl font-bold text-emerald-500">₪{Math.round(summary.netSalaryBreakdown.netSalary).toLocaleString()}</span>
                                 </div>
                             </div>
                         </div>
 
                         <div className="p-4 bg-skin-bg-secondary/50 rounded-b-3xl">
-                            <p className="text-[9px] text-skin-text-tertiary text-center">
+                            <p className="text-[9px] text-white/70 text-center">
                                 * הסכום הוא הערכה בלבד ועשוי להשתנות. ניתן לעדכן את הניכויים בהגדרות.
                             </p>
                         </div>
