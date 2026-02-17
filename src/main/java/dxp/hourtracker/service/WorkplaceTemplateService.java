@@ -57,56 +57,62 @@ public class WorkplaceTemplateService {
 
     @Transactional
     public Workplace assignTemplateToUser(String userId, String templateId) {
-        WorkplaceTemplate template = getTemplateById(templateId)
-                .orElseThrow(() -> new IllegalArgumentException("Template not found: " + templateId));
+        try {
+            WorkplaceTemplate template = getTemplateById(templateId)
+                    .orElseThrow(() -> new IllegalArgumentException("Template not found: " + templateId));
 
-        // Create the workplace instance
-        Workplace workplace = Workplace.builder()
-                .userId(userId)
-                .name(template.getNameHe() != null ? template.getNameHe() : template.getName())
-                .hourlyRate(template.getHourlyRate())
-                .overtimeHourlyRate(template.getOvertimeHourlyRate())
-                .shabatHourlyRate(template.getShabatHourlyRate())
-                .shabbatStartHour(template.getShabbatStartHour() != null ? template.getShabbatStartHour() : 15)
-                .shabbatEndHour(template.getShabbatEndHour() != null ? template.getShabbatEndHour() : 5)
-                .color(template.getColor())
-                .templateId(template.getId())
-                .isLocked(true) // Fixed workplaces are locked
-                .isDefault(false)
-                .build();
-
-        // If it's the only one, make it default
-        if (workplaceRepository.findByUserId(userId).isEmpty()) {
-            workplace.setDefault(true);
-        }
-
-        workplace = workplaceRepository.save(workplace);
-
-        // Clone shift types
-        for (ShiftTypeTemplate stt : template.getShifts()) {
-            ShiftType shiftType = ShiftType.builder()
-                    .code(stt.getCode())
-                    .workplaceId(workplace.getId())
-                    .nameHe(stt.getNameHe())
-                    .defaultStart(parseTime(stt.getDefaultStart()))
-                    .defaultEnd(parseTime(stt.getDefaultEnd()))
-                    .defaultHours(stt.getDefaultHours())
-                    .unpaidBreakMinutes(stt.getUnpaidBreakMinutes())
-                    .sortOrder(stt.getSortOrder())
+            // Create the workplace instance
+            Workplace workplace = Workplace.builder()
+                    .userId(userId)
+                    .name(template.getNameHe() != null ? template.getNameHe() : template.getName())
+                    .hourlyRate(template.getHourlyRate())
+                    .overtimeHourlyRate(template.getOvertimeHourlyRate())
+                    .shabatHourlyRate(template.getShabatHourlyRate())
+                    .shabbatStartHour(template.getShabbatStartHour() != null ? template.getShabbatStartHour() : 15)
+                    .shabbatEndHour(template.getShabbatEndHour() != null ? template.getShabbatEndHour() : 5)
+                    .color(template.getColor())
+                    .templateId(template.getId())
+                    .isLocked(true) // Fixed workplaces are locked
+                    .isDefault(false)
                     .build();
-            shiftTypeRepository.save(shiftType);
-        }
 
-        // Migrate legacy shifts (where workplaceId is NULL) to this new workplace
-        // Only if it's the default one (or maybe any new one if we want to catch all
-        // stragglers?)
-        // Let's migrate ALL null-workplace shifts to the FIRST created workplace (which
-        // is usually default).
-        if (workplace.isDefault()) {
-            shiftRepository.updateWorkplaceIdForUser(userId, workplace.getId());
-        }
+            // If it's the only one, make it default
+            if (workplaceRepository.findByUserId(userId).isEmpty()) {
+                workplace.setDefault(true);
+            }
 
-        return workplace;
+            workplace = workplaceRepository.save(workplace);
+
+            // Clone shift types
+            for (ShiftTypeTemplate stt : template.getShifts()) {
+                try {
+                    ShiftType shiftType = ShiftType.builder()
+                            .code(stt.getCode())
+                            .workplaceId(workplace.getId())
+                            .nameHe(stt.getNameHe())
+                            .defaultStart(parseTime(stt.getDefaultStart()))
+                            .defaultEnd(parseTime(stt.getDefaultEnd()))
+                            .defaultHours(stt.getDefaultHours())
+                            .unpaidBreakMinutes(stt.getUnpaidBreakMinutes())
+                            .sortOrder(stt.getSortOrder())
+                            .build();
+                    shiftTypeRepository.save(shiftType);
+                } catch (Exception e) {
+                    log.error("Failed to save shift type: " + stt.getCode(), e);
+                    throw new RuntimeException("Failed to save shift type: " + stt.getCode(), e);
+                }
+            }
+
+            // Migrate legacy shifts (where workplaceId is NULL) to this new workplace
+            if (workplace.isDefault()) {
+                shiftRepository.updateWorkplaceIdForUser(userId, workplace.getId());
+            }
+
+            return workplace;
+        } catch (Exception e) {
+            log.error("Failed to assign template: " + templateId, e);
+            throw new RuntimeException("Failed to assign template: " + e.getMessage(), e);
+        }
     }
 
     @Data
