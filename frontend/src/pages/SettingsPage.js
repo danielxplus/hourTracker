@@ -580,6 +580,7 @@ export default function SettingsPage() {
               <div>
                 <h3 className="text-lg font-bold text-skin-text-primary">בחר מקום עבודה</h3>
                 <p className="text-xs text-skin-text-tertiary">בחר מרשימת המקומות המוגדרים מראש</p>
+                <p className="text-xs text-skin-text-tertiary">כולל את כל סוגי המשמרות, שעות התחלה/סיום ותעריפי בסיס מותאמים.</p>
               </div>
               <button onClick={() => setIsSelectionModalOpen(false)} className="p-2 rounded-full bg-skin-bg-secondary text-skin-text-secondary hover:text-skin-text-primary transition-colors">
                 <X className="w-5 h-5" />
@@ -597,8 +598,6 @@ export default function SettingsPage() {
                     <h4 className="text-base font-bold text-skin-text-primary group-hover:text-skin-accent-primary transition-colors">{template.nameHe || template.name}</h4>
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: template.color }}></div>
                   </div>
-
-                  <p className="text-xs text-skin-text-secondary mt-1 line-clamp-2">כולל את כל סוגי המשמרות, שעות התחלה/סיום ותעריפי בסיס מותאמים.</p>
                   <div className="mt-4 flex gap-4 overflow-x-auto pb-1 no-scrollbar">
                     {template.shifts.slice(0, 3).map(s => (
                       <div key={s.code} className="bg-skin-bg-secondary px-3 py-1.5 rounded-lg border border-skin-border-secondary flex-shrink-0">
