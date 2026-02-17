@@ -88,8 +88,8 @@ public class WorkplaceTemplateService {
                     .code(stt.getCode())
                     .workplaceId(workplace.getId())
                     .nameHe(stt.getNameHe())
-                    .defaultStart(LocalTime.parse(stt.getDefaultStart()))
-                    .defaultEnd(LocalTime.parse(stt.getDefaultEnd()))
+                    .defaultStart(parseTime(stt.getDefaultStart()))
+                    .defaultEnd(parseTime(stt.getDefaultEnd()))
                     .defaultHours(stt.getDefaultHours())
                     .unpaidBreakMinutes(stt.getUnpaidBreakMinutes())
                     .sortOrder(stt.getSortOrder())
@@ -121,6 +121,18 @@ public class WorkplaceTemplateService {
         private Integer shabbatEndHour;
         private String color;
         private List<ShiftTypeTemplate> shifts;
+    }
+
+    private LocalTime parseTime(String timeStr) {
+        if (timeStr == null || timeStr.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return LocalTime.parse(timeStr);
+        } catch (Exception e) {
+            log.warn("Invalid time format in template: {}", timeStr);
+            return null;
+        }
     }
 
     @Data

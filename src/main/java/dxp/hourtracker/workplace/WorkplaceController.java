@@ -37,6 +37,7 @@ public class WorkplaceController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(java.util.Collections.singletonMap("error", e.getMessage()));
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.internalServerError()
                     .body(java.util.Collections.singletonMap("error", "Failed to select template"));
         }
