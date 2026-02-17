@@ -13,7 +13,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/workplaces")
 @RequiredArgsConstructor
-@Transactional
 public class WorkplaceController {
 
     private final WorkplaceRepository workplaceRepository;
