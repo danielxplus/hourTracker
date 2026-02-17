@@ -9,7 +9,9 @@ import lombok.NoArgsConstructor;
 import java.time.LocalTime;
 
 @Entity
-@Table(name = "shift_types")
+@Table(name = "shift_types", uniqueConstraints = {
+        @UniqueConstraint(columnNames = { "code", "workplace_id" })
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

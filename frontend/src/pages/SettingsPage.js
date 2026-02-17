@@ -140,7 +140,11 @@ export default function SettingsPage() {
       await selectTemplate(templateId);
       setIsSelectionModalOpen(false);
     } catch (error) {
-      console.error("Workplace selection error:", error);
+      console.error("Workplace selection full error object:", error);
+      if (error.response) {
+        console.error("Response data:", error.response.data);
+        console.error("Response status:", error.response.status);
+      }
       const serverError = error.response?.data?.error;
       const msg = serverError ? `שגיאה: ${serverError}` : "שגיאה בבחירת מקום עבודה. אנא נסה שוב או בדוק את לוג השרת.";
       alert(msg);

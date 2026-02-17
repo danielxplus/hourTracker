@@ -117,7 +117,14 @@ public class WorkplaceTemplateService {
             return workplace;
         } catch (Exception e) {
             log.error("Failed to assign template: " + templateId, e);
-            throw new RuntimeException("Failed to assign template: " + e.getMessage(), e);
+            String message = e.getMessage();
+            if (e.getCause() != null) {
+                message += " [Root Cause: " + e.getCause().getMessage() + "]";
+                if (e.getCause().getCause() != null) {
+                    message += " [" + e.getCause().getCause().getMessage() + "]";
+                }
+            }
+            throw new RuntimeException("Failed to assign template: " + message, e);
         }
     }
 
