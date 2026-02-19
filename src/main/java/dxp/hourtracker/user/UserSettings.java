@@ -70,4 +70,46 @@ public class UserSettings {
     @Builder.Default
     @Column(name = "theme_preference")
     private String themePreference = "default";
+
+    // --- Israeli Net Salary Predictor Fields ---
+
+    /**
+     * Whether the user pays income tax (משלם מס). Ex-soldiers in first year may be
+     * exempt.
+     */
+    @Builder.Default
+    @Column(name = "pays_tax")
+    private Boolean paysTax = true;
+
+    /** Whether the employer provides a pension fund (6% employee deduction). */
+    @Builder.Default
+    @Column(name = "pension_enabled")
+    private Boolean pensionEnabled = true;
+
+    /**
+     * Whether the employer provides a Keren Hishtalmut (study fund, 2.5% employee
+     * deduction).
+     */
+    @Builder.Default
+    @Column(name = "study_fund_enabled")
+    private Boolean studyFundEnabled = false;
+
+    /** Gender for credit point calculation (women get extra 0.5 points). */
+    @Builder.Default
+    @Column(name = "is_female")
+    private Boolean isFemale = false;
+
+    /**
+     * Whether the user is an ex-soldier/national service (for extra credit points).
+     */
+    @Builder.Default
+    @Column(name = "is_ex_soldier")
+    private Boolean isExSoldier = false;
+
+    /**
+     * Date of discharge from military/national service. Used to calculate the
+     * 36-month benefit window.
+     */
+    @Column(name = "discharge_date")
+    private java.time.LocalDate dischargeDate;
 }

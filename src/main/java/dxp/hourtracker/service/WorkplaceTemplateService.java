@@ -1,0 +1,167 @@
+package dxp.hourtracker.service;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import dxp.hourtracker.entity.ShiftType;
+import dxp.hourtracker.repository.ShiftTypeRepository;
+import dxp.hourtracker.shift.ShiftRepository;
+import dxp.hourtracker.workplace.Workplace;
+import dxp.hourtracker.workplace.WorkplaceRepository;
+import jakarta.annotation.PostConstruct;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.io.IOException;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class WorkplaceTemplateService {
+
+    private final WorkplaceRepository workplaceRepository;
+    private final ShiftTypeRepository shiftTypeRepository;
+    private final ShiftRepository shiftRepository;
+    private final ResourceLoader resourceLoader;
+    private final ObjectMapper objectMapper;
+
+    private List<WorkplaceTemplate> templates = new ArrayList<>();
+
+    @PostConstruct
+    public void loadTemplates() {
+        try {
+            Resource resource = resourceLoader.getResource("classpath:workplaces.json");
+            templates = objectMapper.readValue(resource.getInputStream(), new TypeReference<List<WorkplaceTemplate>>() {
+            });
+            log.info("Loaded {} workplace templates from JSON", templates.size());
+        } catch (IOException e) {
+            log.error("Failed to load workplace templates", e);
+        }
+    }
+
+    public List<WorkplaceTemplate> getTemplates() {
+        return templates;
+    }
+
+    public Optional<WorkplaceTemplate> getTemplateById(String id) {
+        return templates.stream().filter(t -> t.getId().equals(id)).findFirst();
+    }
+
+    @Transactional
+    public Workplace assignTemplateToUser(String userId, String templateId) {
+        try {
+            WorkplaceTemplate template = getTemplateById(templateId)
+                    .orElseThrow(() -> new IllegalArgumentException("Template not found: " + templateId));
+
+            // Create the workplace instance
+            Workplace workplace = Workplace.builder()
+                    .userId(userId)
+                    .name(template.getNameHe() != null ? template.getNameHe() : template.getName())
+                    .hourlyRate(template.getHourlyRate())
+                    .overtimeHourlyRate(template.getOvertimeHourlyRate())
+                    .shabatHourlyRate(template.getShabatHourlyRate())
+                    .shabbatStartHour(template.getShabbatStartHour() != null ? template.getShabbatStartHour() : 15)
+                    .shabbatEndHour(template.getShabbatEndHour() != null ? template.getShabbatEndHour() : 5)
+                    .color(template.getColor())
+                    .templateId(template.getId())
+                    .isLocked(true) // Fixed workplaces are locked
+                    .isDefault(false)
+                    .build();
+
+            // If it's the only one, make it default
+            if (workplaceRepository.findByUserId(userId).isEmpty()) {
+                workplace.setDefault(true);
+            }
+
+            log.info("Creating workplace for user {} using template {}", userId, templateId);
+            workplace = workplaceRepository.save(workplace);
+            log.info("Created workplace ID: {} for user {}", workplace.getId(), userId);
+
+            // Clone shift types
+            for (ShiftTypeTemplate stt : template.getShifts()) {
+                try {
+                    log.debug("Creating shift type {} for workplace {}", stt.getCode(), workplace.getId());
+                    ShiftType shiftType = ShiftType.builder()
+                            .code(stt.getCode())
+                            .workplaceId(workplace.getId())
+                            .nameHe(stt.getNameHe())
+                            .defaultStart(parseTime(stt.getDefaultStart()))
+                            .defaultEnd(parseTime(stt.getDefaultEnd()))
+                            .defaultHours(stt.getDefaultHours())
+                            .unpaidBreakMinutes(stt.getUnpaidBreakMinutes())
+                            .sortOrder(stt.getSortOrder())
+                            .build();
+                    shiftTypeRepository.save(shiftType);
+                } catch (Exception e) {
+                    log.error("Failed to save shift type {} for workplace {}: {}", stt.getCode(), workplace.getId(),
+                            e.getMessage());
+                    throw new RuntimeException("Failed to save shift type " + stt.getCode() + ": " + e.getMessage(), e);
+                }
+            }
+
+            // Migrate legacy shifts (where workplaceId is NULL) to this new workplace
+            if (workplace.isDefault()) {
+                log.info("Migrating legacy shifts (workplaceId IS NULL) to new default workplace {}",
+                        workplace.getId());
+                shiftRepository.updateWorkplaceIdForUser(userId, workplace.getId());
+            }
+
+            return workplace;
+        } catch (Exception e) {
+            log.error("Failed to assign template: " + templateId, e);
+            String message = e.getMessage();
+            if (e.getCause() != null) {
+                message += " [Root Cause: " + e.getCause().getMessage() + "]";
+                if (e.getCause().getCause() != null) {
+                    message += " [" + e.getCause().getCause().getMessage() + "]";
+                }
+            }
+            throw new RuntimeException("Failed to assign template: " + message, e);
+        }
+    }
+
+    @Data
+    public static class WorkplaceTemplate {
+        private String id;
+        private String name;
+        private String nameHe;
+        private Double hourlyRate;
+        private Double overtimeHourlyRate;
+        private Double shabatHourlyRate;
+        private Integer shabbatStartHour;
+        private Integer shabbatEndHour;
+        private String color;
+        private List<ShiftTypeTemplate> shifts;
+    }
+
+    private LocalTime parseTime(String timeStr) {
+        if (timeStr == null || timeStr.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return LocalTime.parse(timeStr);
+        } catch (Exception e) {
+            log.warn("Invalid time format in template: {}", timeStr);
+            return null;
+        }
+    }
+
+    @Data
+    public static class ShiftTypeTemplate {
+        private String code;
+        private String nameHe;
+        private String defaultStart;
+        private String defaultEnd;
+        private Double defaultHours;
+        private Integer unpaidBreakMinutes;
+        private Integer sortOrder;
+    }
+}

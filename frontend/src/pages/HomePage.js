@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Clock, X, Plus, Wallet, Pencil, Trash2, MoreVertical, AlertTriangle, CalendarDays } from "lucide-react";
+import { Clock, X, Plus, Wallet, Pencil, Trash2, MoreVertical, AlertTriangle, CalendarDays, Info } from "lucide-react";
 import ShiftForm from "../components/ShiftForm";
 import WeeklyShiftModal from "../components/WeeklyShiftModal";
 import { useAuth } from "../context/AuthContext";
+import { useWorkplace } from "../context/WorkplaceContext";
 import { shiftConfig, getShiftTypeMap } from "../utils/shiftUtils";
 import api from "../api/client";
 import dayjs from "dayjs";
@@ -18,6 +19,7 @@ function getGreeting(hour) {
 
 export default function HomePage() {
     const { user, refreshUser } = useAuth();
+    const { activeWorkplaceId, activeWorkplace } = useWorkplace(); // Use Context
     const [summary, setSummary] = useState(null);
     const [recentShifts, setRecentShifts] = useState([]);
     const [shiftTypes, setShiftTypes] = useState([]);
@@ -40,6 +42,7 @@ export default function HomePage() {
     const [endShiftId, setEndShiftId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isWeeklyShiftOpen, setIsWeeklyShiftOpen] = useState(false);
+    const [isBreakdownOpen, setIsBreakdownOpen] = useState(false);
 
     useEffect(() => {
         const handleClickOutside = () => setActiveMenuId(null);
@@ -57,10 +60,14 @@ export default function HomePage() {
     }, []);
 
     async function refreshSummary() {
+        // if (!activeWorkplaceId) return; // Allow running without workplace (global view)
+
         try {
+            setIsLoading(true);
+            const params = activeWorkplaceId ? { workplaceId: activeWorkplaceId } : {};
             const [summaryRes, historyRes, settingsRes] = await Promise.all([
-                api.get("/summary"),
-                api.get("/history"),
+                api.get("/summary", { params }),
+                api.get("/history", { params }),
                 api.get("/settings")
             ]);
 
@@ -89,10 +96,13 @@ export default function HomePage() {
     }
 
     useEffect(() => {
+        // Always refresh
         refreshUser();
         refreshSummary();
-        api.get("/shift-types").then(res => setShiftTypes(res.data));
-    }, []);
+        const params = activeWorkplaceId ? { workplaceId: activeWorkplaceId } : {};
+        api.get("/shift-types", { params }).then(res => setShiftTypes(res.data));
+    }, [activeWorkplaceId]); // Re-run when workplace changes
+
 
     // Memoized helper functions for shift calculations
     const formatTime = useMemo(() => (val) => {
@@ -260,6 +270,7 @@ export default function HomePage() {
         // --- 3. Send to Server ---
         try {
             const payload = {
+                workplaceId: activeWorkplaceId, // Add workplaceId
                 shiftCode: selectedShiftCode,
                 date: selectedDate,
                 startTime,
@@ -336,6 +347,7 @@ export default function HomePage() {
             // Create all shifts in parallel
             const promises = shiftsData.map(shift =>
                 api.post("/shifts", {
+                    workplaceId: activeWorkplaceId, // Add workplaceId
                     shiftCode: shift.shiftCode,
                     date: shift.date,
                     startTime: shift.startTime,
@@ -347,6 +359,7 @@ export default function HomePage() {
 
             await Promise.all(promises);
             refreshSummary();
+
             refreshUser();
         } catch (error) {
             console.error("Error saving weekly shifts:", error);
@@ -360,21 +373,43 @@ export default function HomePage() {
                 <h1 className="text-xl font-medium text-skin-text-primary mb-0.5">
                     {greeting}, {userName}
                 </h1>
-                <p className="text-xs text-skin-text-tertiary">
-                    {new Date().toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" })}
-                </p>
+                <div className="flex items-center gap-2 text-xs text-skin-text-tertiary">
+                    <span>{new Date().toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" })}</span>
+                    {activeWorkplace && (
+                        <>
+                            <span className="w-1 h-1 rounded-full bg-skin-border-secondary"></span>
+                            <span>{activeWorkplace.name}</span>
+                        </>
+                    )}
+                </div>
             </header>
+
 
             {/* Stats - Bento Grid */}
             <section className="mb-6" dir="rtl">
                 <div className="grid grid-cols-2 gap-3">
                     <div className="col-span-2 bg-skin-accent-primary rounded-2xl p-5 text-skin-text-primary border border-skin-border-secondary shadow-sm">
-                        <div className="text-xs text-skin-text-inverse-light mb-1">משכורת צפויה</div>
-                        <div className="text-3xl font-semibold text-skin-text-inverse mb-2">
+                        <div className="flex items-center justify-between">
+                            <div className="text-xs text-skin-text-inverse-light mb-1">משכורת צפויה</div>
+                            {summary?.netSalaryBreakdown && (
+                                <button
+                                    onClick={() => setIsBreakdownOpen(true)}
+                                    className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                                >
+                                    <Info className="w-3.5 h-3.5 text-white/70" />
+                                </button>
+                            )}
+                        </div>
+                        <div className="text-3xl font-semibold text-skin-text-inverse mb-1">
                             ₪{(summary?.expectedMonthSalary ?? 0).toFixed(0)}
                         </div>
+                        {summary?.netSalaryBreakdown?.netSalary != null && (
+                            <div className="text-sm text-skin-text-inverse-light mt-1">
+                                ~₪{Math.round(summary.netSalaryBreakdown.netSalary).toLocaleString()} נטו
+                            </div>
+                        )}
                         {summary?.totalTips > 0 && (
-                            <div className="text-xs text-skin-text-inverse-light">
+                            <div className="text-xs text-skin-text-inverse-light mt-1">
                                 לא כולל ₪{(summary.totalTips ?? 0).toFixed(0)} בטיפים
                             </div>
                         )}
@@ -575,7 +610,7 @@ export default function HomePage() {
 
                         {/* Date */}
                         <div className="mb-4">
-                            <DatePicker
+                            <input
                                 selected={selectedDate ? new Date(selectedDate) : null}
                                 onChange={(date) => {
                                     if (date) {
@@ -713,6 +748,94 @@ export default function HomePage() {
                             >
                                 סיים משמרת
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Net Salary Breakdown Overlay */}
+            {isBreakdownOpen && summary?.netSalaryBreakdown && (
+                <div
+                    className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+                    onClick={() => setIsBreakdownOpen(false)}
+                >
+                    <div
+                        className="bg-skin-card-bg/95 backdrop-blur-xl rounded-t-3xl sm:rounded-3xl w-full max-w-sm shadow-2xl border border-skin-border-secondary/50"
+                        dir="rtl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="p-5 border-b border-skin-border-secondary">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-base font-bold text-white">פירוט משכורת</h3>
+                                <button
+                                    onClick={() => setIsBreakdownOpen(false)}
+                                    className="p-1.5 rounded-full bg-skin-bg-secondary text-skin-text-secondary hover:text-skin-text-primary transition-colors"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                            <p className="text-[10px] text-white/80 mt-1">חישוב על פי חוקי המס 2026</p>
+                        </div>
+
+                        <div className="p-5 space-y-3">
+                            {/* Gross */}
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-white/70 font-medium">ברוטו</span>
+                                <span className="text-sm font-bold text-skin-text-primary">₪{Math.round(summary.netSalaryBreakdown.grossSalary).toLocaleString()}</span>
+                            </div>
+
+                            <div className="border-t border-dashed border-skin-border-secondary my-2" />
+
+                            {/* Deductions */}
+                            {summary.netSalaryBreakdown.pensionDeduction > 0 && (
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs text-white/70">פנסיה (6%)</span>
+                                    <span className="text-xs text-red-400 font-medium">-₪{Math.round(summary.netSalaryBreakdown.pensionDeduction).toLocaleString()}</span>
+                                </div>
+                            )}
+                            {summary.netSalaryBreakdown.studyFundDeduction > 0 && (
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs text-white/70">קרן השתלמות (2.5%)</span>
+                                    <span className="text-xs text-red-400 font-medium">-₪{Math.round(summary.netSalaryBreakdown.studyFundDeduction).toLocaleString()}</span>
+                                </div>
+                            )}
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-white/70">ביטוח לאומי + מס בריאות</span>
+                                <span className="text-xs text-red-400 font-medium">-₪{Math.round(summary.netSalaryBreakdown.bituachLeumiDeduction).toLocaleString()}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-white/70">מס הכנסה</span>
+                                <span className="text-xs text-red-400 font-medium">-₪{Math.round(summary.netSalaryBreakdown.incomeTaxDeduction).toLocaleString()}</span>
+                            </div>
+
+                            {/* Credit Points */}
+                            {summary.netSalaryBreakdown.creditDiscount > 0 && (
+                                <>
+                                    <div className="border-t border-dashed border-skin-border-secondary my-2" />
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs text-white/70">
+                                            נקודות זיכוי ({summary.netSalaryBreakdown.creditPoints})
+                                        </span>
+                                        <span className="text-xs text-emerald-400 font-medium">
+                                            הנחה של ₪{Math.round(summary.netSalaryBreakdown.creditDiscount).toLocaleString()}
+                                        </span>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Net Total */}
+                            <div className="border-t border-skin-border-secondary pt-3 mt-3">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-base font-bold text-white">נטו (לחשבון)</span>
+                                    <span className="text-xl font-bold text-emerald-500">₪{Math.round(summary.netSalaryBreakdown.netSalary).toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-4 bg-skin-bg-secondary/50 rounded-b-3xl">
+                            <p className="text-[9px] text-white/70 text-center">
+                                * הסכום הוא הערכה בלבד ועשוי להשתנות. ניתן לעדכן את הניכויים בהגדרות.
+                            </p>
                         </div>
                     </div>
                 </div>
