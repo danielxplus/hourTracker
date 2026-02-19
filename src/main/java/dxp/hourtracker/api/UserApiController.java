@@ -443,6 +443,20 @@ public class UserApiController {
         if (principal == null)
             return response;
 
+        // Require a secret admin key — prevents any logged-in user from self-granting
+        // premium
+        String expectedSecret = System.getenv("PREMIUM_SECRET_KEY");
+        if (expectedSecret == null || expectedSecret.isBlank()) {
+            // Endpoint disabled if no secret configured in environment
+            response.put("error", "Premium grants are disabled");
+            return response;
+        }
+        String providedSecret = (String) body.get("secretKey");
+        if (!expectedSecret.equals(providedSecret)) {
+            response.put("error", "Unauthorized");
+            return response;
+        }
+
         String userId = principal.getName();
         Integer daysToAdd = (Integer) body.get("days");
         if (daysToAdd == null || daysToAdd <= 0) {

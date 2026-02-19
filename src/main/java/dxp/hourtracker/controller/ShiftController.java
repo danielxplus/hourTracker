@@ -128,6 +128,9 @@ public class ShiftController {
         String userId = principal.getName();
         Shift shift = shiftRepository.findById(shiftId)
                 .orElseThrow(() -> new IllegalArgumentException("Shift not found"));
+        if (!shift.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("Unauthorized: this shift does not belong to you");
+        }
         Object tipValueObj = body.get("tipAmount");
         if (!(tipValueObj instanceof Number)) {
             throw new IllegalArgumentException("tipAmount must be a numeric value");
