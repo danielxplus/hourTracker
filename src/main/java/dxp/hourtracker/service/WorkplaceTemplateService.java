@@ -107,11 +107,25 @@ public class WorkplaceTemplateService {
                 }
             }
 
-            // Migrate legacy shifts (where workplaceId is NULL) to this new workplace
+            // Migrate legacy shifts (where workplaceId is NULL) to this new workplace,
+            // BUT ONLY if this is truly the user's first-ever workplace (no other
+            // workplaces exist yet).
+            // This prevents bulk-migrating shifts to the wrong workplace if a user picks
+            // a secondary template before choosing their primary one.
             if (workplace.isDefault()) {
-                log.info("Migrating legacy shifts (workplaceId IS NULL) to new default workplace {}",
-                        workplace.getId());
-                shiftRepository.updateWorkplaceIdForUser(userId, workplace.getId());
+                long nullShiftCount = shiftRepository.countLegacyShiftsForUser(userId);
+                // Only migrate if there are actually legacy null shifts and this is the sole
+                // workplace
+                long totalWorkplaces = workplaceRepository.findByUserId(userId).size(); // includes newly saved one
+                if (nullShiftCount > 0 && totalWorkplaces == 1) {
+                    log.info("Migrating {} legacy shifts (workplaceId IS NULL) to new default workplace {}",
+                            nullShiftCount, workplace.getId());
+                    shiftRepository.updateWorkplaceIdForUser(userId, workplace.getId());
+                } else if (nullShiftCount > 0) {
+                    log.info("Skipping null-shift migration: user {} already has {} workplaces. " +
+                            "Use /api/workplaces/reassign-shifts to manually reassign if needed.",
+                            userId, totalWorkplaces);
+                }
             }
 
             return workplace;

@@ -31,4 +31,26 @@ public interface ShiftRepository extends JpaRepository<Shift, Long> {
     @Modifying
     @Query("UPDATE Shift s SET s.workplaceId = :workplaceId WHERE s.userId = :userId AND s.workplaceId IS NULL")
     void updateWorkplaceIdForUser(@Param("userId") String userId, @Param("workplaceId") Long workplaceId);
+
+    /**
+     * Reassigns all shifts belonging to a user from one workplace to another.
+     * Scoped to both userId AND fromWorkplaceId for safety.
+     */
+    @Modifying
+    @Query("UPDATE Shift s SET s.workplaceId = :toWorkplaceId WHERE s.userId = :userId AND s.workplaceId = :fromWorkplaceId")
+    int reassignShiftsWorkplace(
+            @Param("userId") String userId,
+            @Param("fromWorkplaceId") Long fromWorkplaceId,
+            @Param("toWorkplaceId") Long toWorkplaceId);
+
+    /**
+     * Count shifts with a specific (non-null) workplaceId.
+     */
+    long countByUserIdAndWorkplaceId(String userId, Long workplaceId);
+
+    /**
+     * Count shifts where workplaceId IS NULL (legacy/unassigned shifts).
+     */
+    @Query("SELECT COUNT(s) FROM Shift s WHERE s.userId = :userId AND s.workplaceId IS NULL")
+    long countLegacyShiftsForUser(@Param("userId") String userId);
 }

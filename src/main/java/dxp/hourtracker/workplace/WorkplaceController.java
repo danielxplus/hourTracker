@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import dxp.hourtracker.shift.ShiftRepository;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/workplaces")
@@ -128,6 +129,47 @@ public class WorkplaceController {
                     return ResponseEntity.ok().<Void>build();
                 })
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Safely reassigns all shifts from one workplace to another.
+     * Both workplaces must belong to the authenticated user.
+     * Example: POST /api/workplaces/reassign-shifts?from=3&to=1
+     */
+    @PostMapping("/reassign-shifts")
+    @Transactional
+    public ResponseEntity<?> reassignShifts(
+            @AuthenticationPrincipal OAuth2User principal,
+            @RequestParam Long from,
+            @RequestParam Long to) {
+        if (principal == null)
+            return ResponseEntity.status(401).build();
+        String userId = principal.getName();
+
+        // Validate both workplaces exist and belong to this user
+        Workplace fromWp = workplaceRepository.findById(from)
+                .filter(w -> w.getUserId().equals(userId))
+                .orElse(null);
+        if (fromWp == null)
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Source workplace not found or not yours (id=" + from + ")"));
+
+        Workplace toWp = workplaceRepository.findById(to)
+                .filter(w -> w.getUserId().equals(userId))
+                .orElse(null);
+        if (toWp == null)
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Target workplace not found or not yours (id=" + to + ")"));
+
+        long before = shiftRepository.countByUserIdAndWorkplaceId(userId, from);
+        int moved = shiftRepository.reassignShiftsWorkplace(userId, from, to);
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Shifts reassigned successfully",
+                "from", fromWp.getName(),
+                "to", toWp.getName(),
+                "shiftsMoved", moved,
+                "shiftsRemainingInSource", before - moved));
     }
 
     private void unsetOtherDefaults(String userId) {
