@@ -748,11 +748,11 @@ export default function HomePage() {
             {/* Net Salary Breakdown Overlay */}
             {isBreakdownOpen && summary?.netSalaryBreakdown && (
                 <div
-                    className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-4"
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
                     onClick={() => setIsBreakdownOpen(false)}
                 >
                     <div
-                        className="bg-skin-card-bg rounded-3xl w-full max-w-sm shadow-2xl border border-skin-border-secondary/50 flex flex-col max-h-[85vh] mb-12 sm:mb-0"
+                        className="bg-skin-card-bg rounded-3xl w-full max-w-sm shadow-2xl border border-skin-border-secondary/50 flex flex-col max-h-[85vh]"
                         dir="rtl"
                         onClick={(e) => e.stopPropagation()}
                     >
