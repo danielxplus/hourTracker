@@ -7,8 +7,6 @@ import { useWorkplace } from "../context/WorkplaceContext";
 import { shiftConfig, getShiftTypeMap } from "../utils/shiftUtils";
 import api from "../api/client";
 import dayjs from "dayjs";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 
 function getGreeting(hour) {
     if (hour >= 5 && hour < 12) return "בוקר טוב";
@@ -611,15 +609,9 @@ export default function HomePage() {
                         {/* Date */}
                         <div className="mb-4">
                             <input
-                                selected={selectedDate ? new Date(selectedDate) : null}
-                                onChange={(date) => {
-                                    if (date) {
-                                        const offsetDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
-                                        setSelectedDate(offsetDate.toISOString().slice(0, 10));
-                                    }
-                                }}
-                                dateFormat="dd-MM-yyyy"
-                                wrapperClassName="w-full"
+                                type="date"
+                                value={selectedDate}
+                                onChange={(e) => setSelectedDate(e.target.value)}
                                 className="w-full bg-skin-bg-secondary border border-skin-border-primary rounded-xl py-3 text-center text-sm font-medium text-skin-text-primary focus:outline-none active:bg-skin-bg-primary"
                             />
                         </div>
@@ -638,7 +630,7 @@ export default function HomePage() {
                             setOvertimeHours={setOvertimeHours}
                             overtimeRate={overtimeRate}
                             setOvertimeRate={setOvertimeRate}
-                            overtimeRateFromSettings={user?.settings?.overtimeHourlyRate} // Or however you get settings in Home
+                            overtimeRateFromSettings={overtimeRateFromSettings}
                         />
 
                         <button
@@ -756,17 +748,17 @@ export default function HomePage() {
             {/* Net Salary Breakdown Overlay */}
             {isBreakdownOpen && summary?.netSalaryBreakdown && (
                 <div
-                    className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-4"
                     onClick={() => setIsBreakdownOpen(false)}
                 >
                     <div
-                        className="bg-skin-card-bg/95 backdrop-blur-xl rounded-t-3xl sm:rounded-3xl w-full max-w-sm shadow-2xl border border-skin-border-secondary/50"
+                        className="bg-skin-card-bg rounded-3xl w-full max-w-sm shadow-2xl border border-skin-border-secondary/50 flex flex-col max-h-[85vh] mb-12 sm:mb-0"
                         dir="rtl"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="p-5 border-b border-skin-border-secondary">
                             <div className="flex items-center justify-between">
-                                <h3 className="text-base font-bold text-white">פירוט משכורת</h3>
+                                <h3 className="text-base font-bold text-skin-text-primary">פירוט משכורת</h3>
                                 <button
                                     onClick={() => setIsBreakdownOpen(false)}
                                     className="p-1.5 rounded-full bg-skin-bg-secondary text-skin-text-secondary hover:text-skin-text-primary transition-colors"
@@ -774,13 +766,13 @@ export default function HomePage() {
                                     <X className="w-4 h-4" />
                                 </button>
                             </div>
-                            <p className="text-[10px] text-white/80 mt-1">חישוב על פי חוקי המס 2026</p>
+                            <p className="text-[10px] text-skin-text-tertiary mt-1">חישוב על פי חוקי המס 2026</p>
                         </div>
 
-                        <div className="p-5 space-y-3">
+                        <div className="p-5 space-y-3 overflow-y-auto">
                             {/* Gross */}
                             <div className="flex items-center justify-between">
-                                <span className="text-sm text-white/70 font-medium">ברוטו</span>
+                                <span className="text-sm text-skin-text-secondary font-medium">ברוטו</span>
                                 <span className="text-sm font-bold text-skin-text-primary">₪{Math.round(summary.netSalaryBreakdown.grossSalary).toLocaleString()}</span>
                             </div>
 
@@ -789,23 +781,23 @@ export default function HomePage() {
                             {/* Deductions */}
                             {summary.netSalaryBreakdown.pensionDeduction > 0 && (
                                 <div className="flex items-center justify-between">
-                                    <span className="text-xs text-white/70">פנסיה (6%)</span>
-                                    <span className="text-xs text-red-400 font-medium">-₪{Math.round(summary.netSalaryBreakdown.pensionDeduction).toLocaleString()}</span>
+                                    <span className="text-xs text-skin-text-secondary">פנסיה (6%)</span>
+                                    <span className="text-xs text-red-500 font-medium">-₪{Math.round(summary.netSalaryBreakdown.pensionDeduction).toLocaleString()}</span>
                                 </div>
                             )}
                             {summary.netSalaryBreakdown.studyFundDeduction > 0 && (
                                 <div className="flex items-center justify-between">
-                                    <span className="text-xs text-white/70">קרן השתלמות (2.5%)</span>
-                                    <span className="text-xs text-red-400 font-medium">-₪{Math.round(summary.netSalaryBreakdown.studyFundDeduction).toLocaleString()}</span>
+                                    <span className="text-xs text-skin-text-secondary">קרן השתלמות (2.5%)</span>
+                                    <span className="text-xs text-red-500 font-medium">-₪{Math.round(summary.netSalaryBreakdown.studyFundDeduction).toLocaleString()}</span>
                                 </div>
                             )}
                             <div className="flex items-center justify-between">
-                                <span className="text-xs text-white/70">ביטוח לאומי + מס בריאות</span>
-                                <span className="text-xs text-red-400 font-medium">-₪{Math.round(summary.netSalaryBreakdown.bituachLeumiDeduction).toLocaleString()}</span>
+                                <span className="text-xs text-skin-text-secondary">ביטוח לאומי + מס בריאות</span>
+                                <span className="text-xs text-red-500 font-medium">-₪{Math.round(summary.netSalaryBreakdown.bituachLeumiDeduction).toLocaleString()}</span>
                             </div>
                             <div className="flex items-center justify-between">
-                                <span className="text-xs text-white/70">מס הכנסה</span>
-                                <span className="text-xs text-red-400 font-medium">-₪{Math.round(summary.netSalaryBreakdown.incomeTaxDeduction).toLocaleString()}</span>
+                                <span className="text-xs text-skin-text-secondary">מס הכנסה</span>
+                                <span className="text-xs text-red-500 font-medium">-₪{Math.round(summary.netSalaryBreakdown.incomeTaxDeduction).toLocaleString()}</span>
                             </div>
 
                             {/* Credit Points */}
@@ -813,10 +805,10 @@ export default function HomePage() {
                                 <>
                                     <div className="border-t border-dashed border-skin-border-secondary my-2" />
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs text-white/70">
+                                        <span className="text-xs text-skin-text-secondary">
                                             נקודות זיכוי ({summary.netSalaryBreakdown.creditPoints})
                                         </span>
-                                        <span className="text-xs text-emerald-400 font-medium">
+                                        <span className="text-xs text-emerald-600 font-medium">
                                             הנחה של ₪{Math.round(summary.netSalaryBreakdown.creditDiscount).toLocaleString()}
                                         </span>
                                     </div>
@@ -826,14 +818,14 @@ export default function HomePage() {
                             {/* Net Total */}
                             <div className="border-t border-skin-border-secondary pt-3 mt-3">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-base font-bold text-white">נטו (לחשבון)</span>
+                                    <span className="text-base font-bold text-skin-text-primary">נטו (לחשבון)</span>
                                     <span className="text-xl font-bold text-emerald-500">₪{Math.round(summary.netSalaryBreakdown.netSalary).toLocaleString()}</span>
                                 </div>
                             </div>
                         </div>
 
                         <div className="p-4 bg-skin-bg-secondary/50 rounded-b-3xl">
-                            <p className="text-[9px] text-white/70 text-center">
+                            <p className="text-[9px] text-skin-text-secondary text-center">
                                 * הסכום הוא הערכה בלבד ועשוי להשתנות. ניתן לעדכן את הניכויים בהגדרות.
                             </p>
                         </div>

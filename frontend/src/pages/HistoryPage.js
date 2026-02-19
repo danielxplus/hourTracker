@@ -3,13 +3,13 @@ import dayjs from "dayjs";
 import { Clock, MoreVertical, Wallet, Pencil, Trash2, X, List, Calendar } from "lucide-react";
 import ShiftForm from "../components/ShiftForm";
 import CalendarView from "../components/CalendarView";
+import { useWorkplace } from "../context/WorkplaceContext";
 import { shiftConfig, getShiftTypeMap } from "../utils/shiftUtils";
 import api from "../api/client";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 
 export default function HistoryPage() {
     // Default to 60 or a safe number so we never send 0 if settings fail to load
+    const { activeWorkplaceId } = useWorkplace();
     const [overtimeRateFromSettings, setOvertimeRateFromSettings] = useState(60);
     const [isPremium, setIsPremium] = useState(true);
     const [viewMode, setViewMode] = useState("list"); // "list" or "calendar"
@@ -59,14 +59,16 @@ export default function HistoryPage() {
     // --- Load Data ---
     async function loadHistory() {
         try {
-            const res = await api.get("/history");
+            const params = activeWorkplaceId ? { workplaceId: activeWorkplaceId } : {};
+            const res = await api.get("/history", { params });
             setItems(res.data.items ?? []);
         } catch { /* ignore */ }
     }
 
     useEffect(() => {
         loadHistory();
-        api.get("/shift-types").then(res => setShiftTypes(res.data)).catch(() => { });
+        const params = activeWorkplaceId ? { workplaceId: activeWorkplaceId } : {};
+        api.get("/shift-types", { params }).then(res => setShiftTypes(res.data)).catch(() => { });
         api.get("/settings").then(res => {
             if (res.data.overtimeHourlyRate) {
                 setOvertimeRateFromSettings(res.data.overtimeHourlyRate);
@@ -77,7 +79,7 @@ export default function HistoryPage() {
         const handleClickOutside = () => setActiveMenuId(null);
         window.addEventListener('click', handleClickOutside);
         return () => window.removeEventListener('click', handleClickOutside);
-    }, []);
+    }, [activeWorkplaceId]);
 
     // --- Handlers ---
     const handleEditShift = (shift) => {
@@ -118,6 +120,7 @@ export default function HistoryPage() {
 
         try {
             const payload = {
+                workplaceId: activeWorkplaceId,
                 shiftCode: selectedShiftCode,
                 date: selectedDate,
                 startTime,
@@ -363,16 +366,10 @@ export default function HistoryPage() {
 
                         {/* Date */}
                         <div className="mb-4">
-                            <DatePicker
-                                selected={selectedDate ? new Date(selectedDate) : null}
-                                onChange={(date) => {
-                                    if (date) {
-                                        const offsetDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
-                                        setSelectedDate(offsetDate.toISOString().slice(0, 10));
-                                    }
-                                }}
-                                dateFormat="dd/MM/yyyy"
-                                wrapperClassName="w-full"
+                            <input
+                                type="date"
+                                value={selectedDate}
+                                onChange={(e) => setSelectedDate(e.target.value)}
                                 className="w-full bg-skin-bg-secondary border border-skin-border-primary rounded-xl py-3 text-center text-sm font-medium text-skin-text-primary focus:outline-none"
                             />
                         </div>

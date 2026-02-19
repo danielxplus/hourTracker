@@ -1,21 +1,22 @@
 import { shiftConfig } from "../utils/shiftUtils";
+import { Clock } from "lucide-react";
 
 export default function ShiftForm({
-                                      shiftTypes,
-                                      selectedShiftCode,
-                                      setSelectedShiftCode, // Pass the setter
-                                      startTime,
-                                      setStartTime,
-                                      endTime,
-                                      setEndTime,
-                                      isOvertimeOpen,
-                                      setIsOvertimeOpen,
-                                      overtimeHours,
-                                      setOvertimeHours,
-                                      overtimeRate,
-                                      setOvertimeRate,
-                                      overtimeRateFromSettings
-                                  }) {
+    shiftTypes,
+    selectedShiftCode,
+    setSelectedShiftCode,
+    startTime,
+    setStartTime,
+    endTime,
+    setEndTime,
+    isOvertimeOpen,
+    setIsOvertimeOpen,
+    overtimeHours,
+    setOvertimeHours,
+    overtimeRate,
+    setOvertimeRate,
+    overtimeRateFromSettings
+}) {
 
     // Internal handler to update Code AND Times simultaneously
     const handleShiftClick = (shift) => {
@@ -32,61 +33,74 @@ export default function ShiftForm({
         setEndTime(apiEnd || config.defaultEnd || "");
     };
 
+    // Separate "standard" shifts from "specific" or "extra" shifts
+    const standardCodes = ['MORNING', 'EVENING', 'NIGHT', 'MIDDLE'];
+    const standardShifts = shiftTypes.filter(s => standardCodes.includes(s.code));
+    const otherShifts = shiftTypes.filter(s => !standardCodes.includes(s.code));
+
     return (
         <>
             {/* Shift Types */}
             <div className="mb-5">
-                {/* Main 4 shifts */}
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                    {shiftTypes.filter(shift =>
-                        ['MORNING', 'EVENING', 'NIGHT', 'MIDDLE'].includes(shift.code)
-                    ).map((shift) => {
-                        const config = shiftConfig[shift.code?.toLowerCase()] || shiftConfig.middle;
-                        const Icon = config.icon;
-                        const isSelected = selectedShiftCode === shift.code;
+                {/* Standard shifts (up to 4) */}
+                {standardShifts.length > 0 && (
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                        {standardShifts.map((shift) => {
+                            const config = shiftConfig[shift.code?.toLowerCase()] || shiftConfig.middle;
+                            const Icon = config.icon || Clock;
+                            const isSelected = selectedShiftCode === shift.code;
 
-                        return (
-                            <button
-                                key={shift.code}
-                                onClick={() => handleShiftClick(shift)}
-                                className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all active:scale-95 ${isSelected
-                                    ? `bg-gradient-to-br ${config.gradient} border-transparent text-white shadow-lg`
-                                    : 'border-zinc-200 bg-white text-zinc-600 active:bg-zinc-50'
-                                }`}
-                            >
-                                <div className={`p-2 rounded-full ${isSelected ? 'bg-white/20' : config.bg}`}>
-                                    <Icon className={`w-6 h-6 ${isSelected ? 'text-white' : config.color}`} />
-                                </div>
-                                <span className="text-sm font-semibold">{shift.nameHe}</span>
-                            </button>
-                        );
-                    })}
-                </div>
+                            return (
+                                <button
+                                    key={shift.code}
+                                    type="button"
+                                    onClick={() => handleShiftClick(shift)}
+                                    className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all active:scale-95 ${isSelected
+                                        ? `bg-gradient-to-br ${config.gradient} border-transparent text-white shadow-lg`
+                                        : 'border-zinc-200 bg-white text-zinc-600 active:bg-zinc-50'
+                                        }`}
+                                >
+                                    <div className={`p-2 rounded-full ${isSelected ? 'bg-white/20' : config.bg}`}>
+                                        <Icon className={`w-6 h-6 ${isSelected ? 'text-white' : config.color}`} />
+                                    </div>
+                                    <span className="text-sm font-semibold">{shift.nameHe}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
 
-                {/* Specific Time Shifts */}
-                <div className="flex gap-2 justify-center">
-                    {shiftTypes.filter(shift =>
-                        ['7AM_UNTIL_4', '4PM_UNTIL_12'].includes(shift.code)
-                    ).map((shift) => {
-                        const config = shiftConfig[shift.code?.toLowerCase()] || shiftConfig.middle;
-                        const Icon = config.icon;
-                        const isSelected = selectedShiftCode === shift.code;
+                {/* Other shifts (specific times or custom) */}
+                {otherShifts.length > 0 && (
+                    <div className="flex flex-wrap gap-2 justify-center">
+                        {otherShifts.map((shift) => {
+                            const config = shiftConfig[shift.code?.toLowerCase()] || shiftConfig.middle;
+                            const Icon = config.icon || Clock;
+                            const isSelected = selectedShiftCode === shift.code;
 
-                        return (
-                            <button
-                                key={shift.code}
-                                onClick={() => handleShiftClick(shift)}
-                                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border-2 transition-all active:scale-95 ${isSelected
-                                    ? `bg-gradient-to-br ${config.gradient} border-transparent text-white shadow-lg`
-                                    : 'border-zinc-200 bg-white text-zinc-600 active:bg-zinc-50'
-                                }`}
-                            >
-                                <Icon className={`w-4 h-4 ${isSelected ? 'text-white' : config.color}`} />
-                                <span className="text-xs font-semibold">{shift.nameHe}</span>
-                            </button>
-                        );
-                    })}
-                </div>
+                            return (
+                                <button
+                                    key={shift.code}
+                                    type="button"
+                                    onClick={() => handleShiftClick(shift)}
+                                    className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border-2 transition-all active:scale-95 ${isSelected
+                                        ? `bg-gradient-to-br ${config.gradient} border-transparent text-white shadow-lg`
+                                        : 'border-zinc-200 bg-white text-zinc-600 active:bg-zinc-50'
+                                        }`}
+                                >
+                                    <Icon className={`w-4 h-4 ${isSelected ? 'text-white' : config.color}`} />
+                                    <span className="text-xs font-semibold">{shift.nameHe}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {shiftTypes.length === 0 && (
+                    <div className="text-center py-4 border-2 border-dashed border-zinc-100 rounded-2xl">
+                        <p className="text-xs text-zinc-400">לא נמצאו סוגי משמרות במערכת</p>
+                    </div>
+                )}
             </div>
 
             {/* Times */}
@@ -119,6 +133,7 @@ export default function ShiftForm({
             {/* Overtime */}
             {!isOvertimeOpen ? (
                 <button
+                    type="button"
                     onClick={() => setIsOvertimeOpen(true)}
                     className="w-full mb-4 py-2.5 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 text-zinc-600 text-xs font-medium"
                 >
@@ -129,6 +144,7 @@ export default function ShiftForm({
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-medium text-zinc-900">שעות נוספות</span>
                         <button
+                            type="button"
                             onClick={() => {
                                 setIsOvertimeOpen(false);
                                 setOvertimeHours('');
