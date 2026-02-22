@@ -882,6 +882,20 @@ export default function HomePage() {
                     </div>
                 </div>
             )}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
+
+            <AlertModal
+                isOpen={!!alertConfig}
+                title={alertConfig?.title}
+                message={alertConfig?.message}
+                onClose={() => setAlertConfig(null)}
+            />
         </>
     );
 }
