@@ -265,6 +265,35 @@ public class UserApiController {
         }
     }
 
+    @GetMapping("/shifts/upcoming")
+    public List<Map<String, Object>> upcoming(@AuthenticationPrincipal OAuth2User principal,
+            @RequestParam(required = false) Long workplaceId) {
+        if (principal == null)
+            return List.of();
+
+        String userId = principal.getName();
+        LocalDate today = LocalDate.now();
+
+        List<Shift> shifts;
+        if (workplaceId != null) {
+            shifts = shiftRepository.findByUserIdAndWorkplaceIdAndDateGreaterThanEqualOrderByDateAsc(
+                    userId, workplaceId, today);
+        } else {
+            shifts = shiftRepository.findByUserIdAndDateGreaterThanEqualOrderByDateAsc(
+                    userId, today);
+        }
+
+        return shifts.stream()
+                .map(s -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", s.getId());
+                    m.put("date", s.getDate());
+                    m.put("shiftType", s.getShiftType());
+                    return m;
+                })
+                .toList();
+    }
+
     @GetMapping("/settings")
     public Map<String, Object> settings(@AuthenticationPrincipal OAuth2User principal) {
         Map<String, Object> response = new HashMap<>();

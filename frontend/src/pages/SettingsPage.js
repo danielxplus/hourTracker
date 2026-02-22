@@ -5,6 +5,8 @@ import { useTheme } from "../context/ThemeContext";
 import { useWorkplace } from "../context/WorkplaceContext";
 import api from "../api/client";
 import PremiumLock from '../components/PremiumLock';
+import Toast from "../components/Toast";
+import AlertModal from "../components/AlertModal";
 
 export default function SettingsPage() {
   const { user, refreshUser, logout } = useAuth();
@@ -40,6 +42,8 @@ export default function SettingsPage() {
   // Workplace Modal State
   const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [alertConfig, setAlertConfig] = useState(null);
 
   // Section Expansion State
   const [isSalaryExpanded, setIsSalaryExpanded] = useState(true);
@@ -109,11 +113,10 @@ export default function SettingsPage() {
         });
         refreshWorkplaces();
       }
-      setSavedSection("salary");
-      setTimeout(() => setSavedSection(""), 2000);
+      setToast({ message: "ההגדרות נשמרו בהצלחה", type: "success" });
     } catch (e) {
       console.error(e);
-      alert("שגיאה בשמירה");
+      setAlertConfig({ title: "שגיאה", message: "שגיאה בשמירת התעריפים. נא לנסות שוב." });
     } finally {
       setIsSaving(false);
     }
@@ -125,10 +128,9 @@ export default function SettingsPage() {
     try {
       await api.post("/me/display-name", { displayName: displayName.trim() });
       await refreshUser();
-      setSavedSection("name");
-      setTimeout(() => setSavedSection(""), 2000);
+      setToast({ message: "השם עודכן בהצלחה", type: "success" });
     } catch {
-      // ignore
+      setAlertConfig({ title: "שגיאה", message: "לא ניתן לעדכן את השם כרגע." });
     } finally {
       setIsSaving(false);
     }
@@ -151,8 +153,8 @@ export default function SettingsPage() {
         console.error("Response status:", error.response.status);
       }
       const serverError = error.response?.data?.error;
-      const msg = serverError ? `שגיאה: ${serverError}` : "שגיאה בבחירת מקום עבודה. אנא נסה שוב או בדוק את לוג השרת.";
-      alert(msg);
+      const msg = serverError ? `שגיאה: ${serverError}` : "שגיאה בבחירת מקום עבודה. אנא נסה שוב.";
+      setAlertConfig({ title: "שגיאה", message: msg });
     }
   };
 
@@ -164,7 +166,7 @@ export default function SettingsPage() {
       refreshWorkplaces();
     } catch (error) {
       console.error(error);
-      alert("שגיאה במחיקה");
+      setAlertConfig({ title: "שגיאה", message: "שגיאה במחיקת מקום העבודה." });
     }
   };
 
@@ -676,6 +678,21 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      <AlertModal
+        isOpen={!!alertConfig}
+        title={alertConfig?.title}
+        message={alertConfig?.message}
+        onClose={() => setAlertConfig(null)}
+      />
     </>
   );
 }

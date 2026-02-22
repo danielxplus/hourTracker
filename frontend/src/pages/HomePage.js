@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { Clock, X, Plus, Wallet, Pencil, Trash2, MoreVertical, AlertTriangle, CalendarDays, Info } from "lucide-react";
+import { Clock, X, Plus, Wallet, Pencil, Trash2, MoreVertical, AlertTriangle, CalendarDays, Info, Copy, Check } from "lucide-react";
 import ShiftForm from "../components/ShiftForm";
 import WeeklyShiftModal from "../components/WeeklyShiftModal";
+import Toast from "../components/Toast";
+import AlertModal from "../components/AlertModal";
 import { useAuth } from "../context/AuthContext";
 import { useWorkplace } from "../context/WorkplaceContext";
 import { shiftConfig, getShiftTypeMap } from "../utils/shiftUtils";
 import api from "../api/client";
 import dayjs from "dayjs";
+import "dayjs/locale/he";
 
 function getGreeting(hour) {
     if (hour >= 5 && hour < 12) return "בוקר טוב";
@@ -41,6 +44,8 @@ export default function HomePage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isWeeklyShiftOpen, setIsWeeklyShiftOpen] = useState(false);
     const [isBreakdownOpen, setIsBreakdownOpen] = useState(false);
+    const [toast, setToast] = useState(null); // { message, type }
+    const [alertConfig, setAlertConfig] = useState(null); // { title, message }
 
     useEffect(() => {
         const handleClickOutside = () => setActiveMenuId(null);
@@ -222,16 +227,15 @@ export default function HomePage() {
     async function handleCreateShift() {
         // --- 1. Basic Validation ---
         if (!selectedShiftCode) {
-            alert("אנא בחר סוג משמרת");
+            setAlertConfig({ title: "חסר מידע", message: "אנא בחר סוג משמרת" });
             return;
         }
         if (!selectedDate) {
-            alert("אנא בחר תאריך");
+            setAlertConfig({ title: "חסר מידע", message: "אנא בחר תאריך" });
             return;
         }
-        // Check that start/end times are not empty
         if (!startTime || !endTime) {
-            alert("אנא הזן שעות התחלה וסיום");
+            setAlertConfig({ title: "חסר מידע", message: "אנא הזן שעות התחלה וסיום" });
             return;
         }
 
@@ -245,7 +249,7 @@ export default function HomePage() {
 
             // Check if it's empty, Not-a-Number, or Negative/Zero
             if (!overtimeHours || isNaN(parsedHours) || parsedHours <= 0) {
-                alert("שגיאה: יש להזין כמות שעות נוספות חיובית (לדוגמה: 1.5)");
+                setAlertConfig({ title: "שגיאה בנתונים", message: "יש להזין כמות שעות נוספות חיובית (לדוגמה: 1.5)" });
                 return;
             }
 
@@ -255,7 +259,7 @@ export default function HomePage() {
             if (overtimeRate) {
                 const parsedRate = parseFloat(overtimeRate);
                 if (isNaN(parsedRate) || parsedRate < 0) {
-                    alert("שגיאה: תעריף שעות נוספות לא תקין");
+                    setAlertConfig({ title: "שגיאה בנתונים", message: "תעריף שעות נוספות לא תקין" });
                     return;
                 }
                 finalOvertimeRate = parsedRate;
@@ -289,7 +293,7 @@ export default function HomePage() {
             refreshUser();
         } catch (error) {
             console.error("Save error:", error);
-            alert("שגיאה בשמירה, אנא נסה שנית");
+            setAlertConfig({ title: "שגיאה", message: "שגיאה בשמירה, אנא נסה שנית" });
         }
     }
 
@@ -336,7 +340,7 @@ export default function HomePage() {
             refreshUser();
         } catch (error) {
             console.error("Error ending shift:", error);
-            alert("שגיאה בסיום המשמרת");
+            setAlertConfig({ title: "שגיאה", message: "שגיאה בסיום המשמרת" });
         }
     }
 
@@ -361,25 +365,71 @@ export default function HomePage() {
             refreshUser();
         } catch (error) {
             console.error("Error saving weekly shifts:", error);
-            alert("שגיאה בשמירת המשמרות");
+            setAlertConfig({ title: "שגיאה", message: "שגיאה בשמירת המשמרות" });
         }
     }
 
+    const copyUpcomingShifts = async () => {
+        try {
+            const params = activeWorkplaceId ? { workplaceId: activeWorkplaceId } : {};
+            const res = await api.get("/shifts/upcoming", { params });
+            const upcoming = res.data;
+
+            if (upcoming.length === 0) {
+                setAlertConfig({ title: "אין משמרות", message: "אין משמרות עתידיות להעתקה" });
+                return;
+            }
+
+            let text = "המשמרות הבאות שלי:\n";
+            upcoming.forEach(s => {
+                const dateStr = formatDate(s.date);
+                const date = dayjs(dateStr).locale('he');
+                const dayName = date.format('dddd');
+
+                let shiftName = s.shiftType || s.name;
+                const type = shiftTypeMap[s.shiftType];
+                if (type && type.nameHe) {
+                    shiftName = type.nameHe;
+                }
+
+                // Clean up name (e.g., "משמרת בוקר" -> "בוקר")
+                const cleanName = shiftName.replace("משמרת ", "");
+
+                text += `${dayName} ${cleanName}\n`;
+            });
+
+            await navigator.clipboard.writeText(text.trim());
+            setToast({ message: "המשמרות הועתקו בהצלחה!", type: "success" });
+        } catch (error) {
+            console.error("Error copying shifts:", error);
+            setAlertConfig({ title: "שגיאה", message: "שגיאה בהעתקת המשמרות" });
+        }
+    };
+
     return (
         <>
-            <header className="mb-6 pt-2" dir="rtl">
-                <h1 className="text-xl font-medium text-skin-text-primary mb-0.5">
-                    {greeting}, {userName}
-                </h1>
-                <div className="flex items-center gap-2 text-xs text-skin-text-tertiary">
-                    <span>{new Date().toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" })}</span>
-                    {activeWorkplace && (
-                        <>
-                            <span className="w-1 h-1 rounded-full bg-skin-border-secondary"></span>
-                            <span>{activeWorkplace.name}</span>
-                        </>
-                    )}
+            <header className="mb-6 pt-2 flex items-start justify-between" dir="rtl">
+                <div>
+                    <h1 className="text-xl font-medium text-skin-text-primary mb-0.5">
+                        {greeting}, {userName}
+                    </h1>
+                    <div className="flex items-center gap-2 text-xs text-skin-text-tertiary">
+                        <span>{new Date().toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" })}</span>
+                        {activeWorkplace && (
+                            <>
+                                <span className="w-1 h-1 rounded-full bg-skin-border-secondary"></span>
+                                <span>{activeWorkplace.name}</span>
+                            </>
+                        )}
+                    </div>
                 </div>
+                <button
+                    onClick={copyUpcomingShifts}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-skin-bg-secondary border border-skin-border-primary text-skin-text-secondary hover:text-skin-text-primary hover:bg-skin-bg-primary transition-all active:scale-95 shadow-sm"
+                >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span className="text-[11px] font-medium">העתקת משמרות</span>
+                </button>
             </header>
 
 

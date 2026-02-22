@@ -3,6 +3,9 @@ import dayjs from "dayjs";
 import { Clock, MoreVertical, Wallet, Pencil, Trash2, X, List, Calendar } from "lucide-react";
 import ShiftForm from "../components/ShiftForm";
 import CalendarView from "../components/CalendarView";
+import Toast from "../components/Toast";
+import AlertModal from "../components/AlertModal";
+import ConfirmModal from "../components/ConfirmModal";
 import { useWorkplace } from "../context/WorkplaceContext";
 import { shiftConfig, getShiftTypeMap } from "../utils/shiftUtils";
 import api from "../api/client";
@@ -37,6 +40,11 @@ export default function HistoryPage() {
     // --- Tip States ---
     const [tipAmount, setTipAmount] = useState("");
     const [tipShiftId, setTipShiftId] = useState(null);
+
+    // --- Message States ---
+    const [toast, setToast] = useState(null);
+    const [alertConfig, setAlertConfig] = useState(null);
+    const [confirmConfig, setConfirmConfig] = useState(null);
 
     // --- Helpers ---
     const formatTime = useMemo(() => (val) => {
@@ -106,7 +114,7 @@ export default function HistoryPage() {
         // 2. CRITICAL FIX: Validate Times!
         // Sending empty strings "" for time often causes Backend 500 errors
         if (!selectedShiftCode || !selectedDate || !startTime || !endTime) {
-            alert("נא למלא את כל פרטי המשמרת (תאריך, סוג, ושעות)");
+            setAlertConfig({ title: "חסר מידע", message: "נא למלא את כל פרטי המשמרת (תאריך, סוג, ושעות)" });
             return;
         }
 
@@ -131,22 +139,33 @@ export default function HistoryPage() {
 
             await api.put(`/shifts/${editShiftId}`, payload);
 
-            closeModals();
             loadHistory();
+            setToast({ message: "המשמרת עודכנה בהצלחה", type: "success" });
         } catch (error) {
             console.error("Failed to save shift:", error);
-            alert("שגיאה בשמירה: " + (error.response?.data?.message || "נא לנסות שוב"));
+            setAlertConfig({ title: "שגיאה", message: "שגיאה בשמירה: " + (error.response?.data?.message || "נא לנסות שוב") });
         }
     };
 
-    const handleDeleteShift = async (id) => {
+    const handleDeleteShift = (id) => {
         setActiveMenuId(null);
-        if (window.confirm("האם למחוק את המשמרת?")) {
-            try {
-                await api.delete(`/shifts/${id}`);
-                loadHistory();
-            } catch { alert("שגיאה במחיקה"); }
-        }
+        setConfirmConfig({
+            title: "מחיקת משמרת",
+            message: "האם את/ה בטוח/ה שברצונך למחוק את המשמרת? לא ניתן לשחזר פעולה זו.",
+            confirmText: "מחק",
+            isDestructive: true,
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/shifts/${id}`);
+                    setConfirmConfig(null);
+                    setToast({ message: "המשמרת נמחקה בהצלחה", type: "success" });
+                    loadHistory();
+                } catch {
+                    setConfirmConfig(null);
+                    setAlertConfig({ title: "שגיאה", message: "שגיאה במחיקת המשמרת" });
+                }
+            }
+        });
     };
 
     const handleOpenTip = (shiftId, currentTip) => {
@@ -421,6 +440,30 @@ export default function HistoryPage() {
                     </div>
                 </div>
             )}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
+
+            <AlertModal
+                isOpen={!!alertConfig}
+                title={alertConfig?.title}
+                message={alertConfig?.message}
+                onClose={() => setAlertConfig(null)}
+            />
+
+            <ConfirmModal
+                isOpen={!!confirmConfig}
+                title={confirmConfig?.title}
+                message={confirmConfig?.message}
+                confirmText={confirmConfig?.confirmText}
+                isDestructive={confirmConfig?.isDestructive}
+                onConfirm={confirmConfig?.onConfirm}
+                onCancel={() => setConfirmConfig(null)}
+            />
         </>
     );
 }

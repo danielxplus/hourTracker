@@ -29,6 +29,11 @@ public interface ShiftRepository extends JpaRepository<Shift, Long> {
         // Top 5 per workplace
         List<Shift> findTop5ByUserIdAndWorkplaceIdOrderByDateDesc(String userId, Long workplaceId);
 
+        List<Shift> findByUserIdAndDateGreaterThanEqualOrderByDateAsc(String userId, LocalDate date);
+
+        List<Shift> findByUserIdAndWorkplaceIdAndDateGreaterThanEqualOrderByDateAsc(String userId, Long workplaceId,
+                        LocalDate date);
+
         @Modifying
         @Query("UPDATE Shift s SET s.workplaceId = :workplaceId WHERE s.userId = :userId AND s.workplaceId IS NULL")
         void updateWorkplaceIdForUser(@Param("userId") String userId, @Param("workplaceId") Long workplaceId);
