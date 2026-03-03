@@ -81,6 +81,7 @@
                 "defaultStart": "06:00",
                 "defaultEnd": "14:00",
                 "defaultHours": 8.0,
+
                 "unpaidBreakMinutes": 0,
                 "sortOrder": 1
             },

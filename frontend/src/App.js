@@ -12,6 +12,11 @@ import ProtectedRoute from "./context/ProtectedRoute";
 import Layout from "./components/Layout";
 import "./index.css";
 
+import ReactGA from "react-ga4";
+
+ReactGA.initialize("G-3YT807MNB4");
+ReactGA.send({ hitType: "pageview", page: window.location.pathname });
+
 function RootLayout() {
     return (
         <ThemeProvider>
